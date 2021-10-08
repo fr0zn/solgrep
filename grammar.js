@@ -312,7 +312,8 @@ module.exports = grammar({
         yul_continue: $ => "continue",
 
         yul_identifier: $ => /[a-zA-Z$_]+/,
-        _yul_expression: $ => choice($.yul_path, $.yul_function_call, $._yul_literal),
+        // The usage of `yul_evm_builtin` here is for solidity pragma version < 0.6.0
+        _yul_expression: $ => choice($.yul_path, $.yul_function_call, $._yul_literal, $.yul_evm_builtin),
         yul_path: $ => prec.left(dotSep1($.yul_identifier)),
         
         // -- Yul Literals --
