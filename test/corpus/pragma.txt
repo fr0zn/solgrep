@@ -7,7 +7,7 @@ pragma solidity 0.4.0;
 ---
 
 (source_file
-  (pragma_directive))
+  (pragma_directive (solidity_directive)))
 
 ====================
 Multiple Pragma Directives
@@ -18,7 +18,7 @@ pragma solidity 0.4.0 0.5.0;
 ---
 
 (source_file
-  (pragma_directive))
+  (pragma_directive (solidity_directive)))
 
 ====================
 Equality Pragma Directives
@@ -26,10 +26,32 @@ Equality Pragma Directives
 
 pragma solidity <0.4.0 ^0.5.0 ~0.5;
 pragma solidity =0.4;
+pragma solidity >=0.4;
 
 
 ---
 
 (source_file
-  (pragma_directive)
-  (pragma_directive))
+  (pragma_directive (solidity_directive))
+  (pragma_directive (solidity_directive))
+  (pragma_directive (solidity_directive)))
+
+
+====================
+Experimental Pragma Directives
+====================
+
+pragma experimental SMTChecker;
+pragma experimental ABIEncoderV2;
+pragma experimental "ABIEncoderV2";
+
+---
+
+(source_file
+  (pragma_directive
+    (experimental_directive))
+  (pragma_directive
+    (experimental_directive))
+  (pragma_directive
+    (experimental_directive))
+)

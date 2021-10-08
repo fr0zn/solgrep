@@ -69,11 +69,27 @@ module.exports = grammar({
             $.import_directive,
         ),
 
+        _experimental_directives: $ => choice(
+            "ABIEncoderV2",
+            "SMTChecker",
+        ),
+        experimental_directive: $ => seq(
+            "experimental",
+            seq(optional('"'),$._experimental_directives,optional('"')),
+        ),
+
+        solidity_directive: $ => seq(
+            "solidity",
+            repeat(field("version_constraint", $._pragma_version_constraint)),
+        ),
+
         // Pragma
         pragma_directive: $ => seq(
             "pragma",
-            "solidity",
-            repeat(field("version_constraint", $._pragma_version_constraint)),
+            choice(
+                $.solidity_directive,
+                $.experimental_directive
+            ),
             $._semicolon,
         ),
 
