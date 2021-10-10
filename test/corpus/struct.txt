@@ -10,7 +10,37 @@ struct example {
 ---
 
 (source_file
-    (struct_declaration 
+    (struct_declaration
         (identifier)
         (struct_member (type_name (primitive_type)) (identifier))
-        (struct_member (type_name (primitive_type)) (identifier)))) 
+        (struct_member (type_name (primitive_type)) (identifier))))
+
+====================
+Struct Initialization
+====================
+
+contract Example {
+    function example() {
+        MapEntry({ _key: value, _value: 2 });
+    }
+}
+
+---
+
+(source_file
+  (contract_declaration
+    name: (identifier)
+    body: (contract_body
+        (function_definition
+         function_name: (identifier)
+         body: (function_body
+            (expression_statement
+            (call_expression
+              (identifier)
+              (identifier)
+              (identifier)
+              (identifier)
+              (number_literal))
+            )
+        )
+))))
