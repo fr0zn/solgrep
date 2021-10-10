@@ -745,3 +745,11 @@ contract PayableAddress {
         address y = payable(x);
     }
 }
+
+contract StructInline {
+
+    function _set(Map storage map) public pure {
+        map._entries.push(MapEntry({ _key: key, _value: value }));
+    }
+
+}

@@ -640,14 +640,20 @@ module.exports = grammar({
 
         virtual: $ => "virtual",
         modifier_invocation: $ => seq($.identifier, optional($._call_arguments)),
-        
+
+        _name_value: $ => seq(
+            $.identifier,
+            ":",
+            $._expression,
+        ),
+
         _call_arguments: $ => prec(4,
             seq(
                 '(',
-                commaSep(choice(
-                    $._expression,
-                    seq("{", commaSep($.identifier, ":", $._expression), "}"),
-                )),
+                choice(
+                    commaSep($._expression),
+                    seq("{", commaSep($._name_value), "}"),
+                ),
                 ')'
             ),
         ),
@@ -802,11 +808,7 @@ module.exports = grammar({
         struct_expression: $ => seq(
             $._expression,
             "{",
-            commaSep(seq(
-                $.identifier,
-                ":",
-                $._expression,
-            )),
+            commaSep($._name_value),
             "}"
         ),
         
