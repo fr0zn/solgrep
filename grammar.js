@@ -940,7 +940,7 @@ module.exports = grammar({
             /\.\d+([eE](-)?\d+)?/,
         ),
         _hex_number: $ => seq(/0[xX]/, optional(optionalDashSeparation($._hex_digit))),
-        _hex_digit: $ => /([a-fA-F0-9][a-fA-F0-9])/,
+        _hex_digit: $ => /[\da-fA-F](_?[\da-fA-F])*/,
         number_unit: $ => choice(
             'wei','szabo', 'finney', 'gwei', 'ether', 'seconds', 'minutes', 'hours', 'days', 'weeks', 'years'
         ),
