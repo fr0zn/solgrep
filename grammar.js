@@ -754,6 +754,7 @@ module.exports = grammar({
                 ['~', PREC.NOT],
                 ['-', PREC.NEG],
                 ['+', PREC.NEG],
+                ['after', PREC.DELETE],
                 ['delete', PREC.DELETE],
             ].map(([operator, precedence]) =>
                 prec.left(precedence, seq(
@@ -792,9 +793,9 @@ module.exports = grammar({
         slice_access: $ => prec(PREC.MEMBER, seq(
             field('base', $._expression),
             '[',
-            field('from', $._expression), 
+            optional(field('from', $._expression)),
             ':',
-            field('to', $._expression), 
+            optional(field('to', $._expression)),
             ']'
         )),
 
