@@ -303,3 +303,33 @@ contract Example {
         (function_body
           (emit_statement
             (identifier)))))))
+
+================================================================================
+Tuple variable declaration
+================================================================================
+
+contract Example {
+    function example() {
+        (address x, address y);
+    }
+}
+--------------------------------------------------------------------------------
+
+(source_file
+  (contract_declaration
+    (identifier)
+    (contract_body
+      (function_definition
+        (identifier)
+        (function_body
+          (variable_declaration_statement
+            (variable_declaration_tuple
+              (variable_declaration
+                (type_name
+                  (primitive_type))
+                (identifier))
+              (variable_declaration
+                (type_name
+                  (primitive_type))
+                (identifier)))))))))
+

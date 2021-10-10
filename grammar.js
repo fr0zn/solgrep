@@ -49,6 +49,7 @@ module.exports = grammar({
         [$._primary_expression, $.type_cast_expression],
         [$._yul_expression, $.yul_path],
         [$._yul_expression, $.yul_assignment],
+        [$.tuple_expression, $.variable_declaration_tuple],
     ],
 
     rules: {
@@ -441,33 +442,17 @@ module.exports = grammar({
 
         // -- [ Statements ] --
         block_statement: $ => seq('{', repeat($._statement), "}"),
-        variable_declaration_statement: $ => prec(3,seq(
+        variable_declaration_statement: $ => prec(3,
+            seq(
+                optional('var'),
                 choice(
-                    seq($.variable_declaration, optional(seq('=', $._expression))),
-                    seq($.variable_declaration_tuple, '=', $._expression),
+                    $.variable_declaration,
+                    $.variable_declaration_tuple,
                 ),
+                optional(seq('=', $._expression)),
                 $._semicolon
-        )),
-
-        // var_variable_decartion: $ => prec.left(seq(
-        //     'var',
-        //     choice(
-        //         $.identifier,
-        //         seq(
-        //             '(',
-        //             optional($.identifier),
-        //             repeat(
-        //                 seq(
-        //                     ',',
-        //                     optional($.identifier),
-        //                 )
-        //             ),
-        //         ')')
-        //     ),
-        //     '=',
-        //      $._expression,
-        //      $._semicolon,
-        // )),
+            )
+        ),
 
         variable_declaration: $ => seq(
             $.type_name,
@@ -475,23 +460,17 @@ module.exports = grammar({
             field('name', $.identifier)
         ),
 
-        variable_declaration_tuple: $ => prec(3, choice(
-            seq(
-                '(',
-                commaSep($.variable_declaration),
-                ')'
-            ),
-            seq('var',
-                '(',
-                optional($.identifier),
+        variable_declaration_tuple: $ => prec(3, seq(
+            '(',
+                optional(repeat(',')),
+                $.variable_declaration,
                 repeat(
                     seq(
                         ',',
-                        optional($.identifier),
+                        optional($.variable_declaration),
                     )
                 ),
-                ')'
-            )
+            ')'
         )),
 
         expression_statement: $ => seq($._expression, $._semicolon),
