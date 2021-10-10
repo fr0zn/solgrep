@@ -207,7 +207,7 @@ contract test {
 contract test {
     function fun(uint256 a) {
         if (a >= 8) {
-            return;
+            return ; 
         } else {
             var b = 7;
         }
@@ -305,12 +305,15 @@ contract c {
 contract C {
     function f() {
         var (a,b,c) = g();
+        (a,b,c) = g();
         var (d) = 2;
         var (,e) = 3;
         var (f,) = 4;
         var (x,,) = g();
         var (,y,) = g();
         var (,,) = g();
+        var (x,,,) = g();
+        (x,,,) = g();
     }
     function g() returns (uint, uint, uint) {}
 }

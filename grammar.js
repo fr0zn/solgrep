@@ -444,8 +444,9 @@ module.exports = grammar({
         block_statement: $ => seq('{', repeat($._statement), "}"),
         variable_declaration_statement: $ => prec(3,
             seq(
-                optional('var'),
                 choice(
+                    // To support old var type declaration: var x = 5;
+                    seq('var', $.identifier),
                     $.variable_declaration,
                     $.variable_declaration_tuple,
                 ),
@@ -460,17 +461,27 @@ module.exports = grammar({
             field('name', $.identifier)
         ),
 
-        variable_declaration_tuple: $ => prec(3, seq(
-            '(',
-                optional(repeat(',')),
-                $.variable_declaration,
-                repeat(
-                    seq(
-                        ',',
-                        optional($.variable_declaration),
-                    )
-                ),
-            ')'
+        variable_declaration_tuple: $ => prec(3, choice(
+            // To support old var tuple: var (c,d) = (1,2);
+            seq(
+                'var',
+                '(',
+                    commaSep(optional($.identifier)),
+                ')'
+            ),
+            // (address x, address y,,) = (...);
+            seq(
+                '(',
+                    optional(repeat(',')),
+                    $.variable_declaration,
+                    repeat(
+                        seq(
+                            ',',
+                            optional($.variable_declaration),
+                        )
+                    ),
+                ')'
+            )
         )),
 
         expression_statement: $ => seq($._expression, $._semicolon),
