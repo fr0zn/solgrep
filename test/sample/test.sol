@@ -756,3 +756,8 @@ contract StructInline {
     }
 
 }
+
+contract Example{
+    event Log1_fnc(function() external callback);
+    function query1_fnc(function() external _fnc) external {}
+}

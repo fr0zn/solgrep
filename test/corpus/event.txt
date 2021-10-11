@@ -79,3 +79,24 @@ contract Example {
             (event_paramater 
               type: (type_name (primitive_type))
               name: (identifier))))))
+
+====================
+Event function parameters
+====================
+
+contract Example{
+    event Log1_fnc(function() external callback);
+}
+
+---
+
+(source_file
+  (contract_declaration
+    name: (identifier)
+    body: (contract_body
+      (event_definition
+        name: (identifier)
+        (event_paramater
+          type: (type_name
+            (visibility))
+          name: (identifier))))))

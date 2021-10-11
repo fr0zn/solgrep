@@ -164,3 +164,27 @@ function exampleFunction ();
 (source_file
   (function_definition
     function_name: (identifier)))
+
+================================================================================
+Function with function argument
+================================================================================
+
+contract Example{
+    function query1_fnc(function() external _fnc) external {
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (contract_declaration
+    name: (identifier)
+    body: (contract_body
+      (function_definition
+        function_name: (identifier)
+        (parameter
+          type: (type_name
+            (visibility))
+          name: (identifier))
+        (visibility)
+        body: (function_body)))))
