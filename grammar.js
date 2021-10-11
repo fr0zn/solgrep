@@ -607,6 +607,8 @@ module.exports = grammar({
                 $.virtual,
                 $.override_specifier,
             )),
+            // Fallback functions do not return values on >=0.6.0, some code does have it, we will check
+            field("return_type", optional($.return_type_definition)),
             choice($._semicolon, field('body', $.function_body))
         ),
 
