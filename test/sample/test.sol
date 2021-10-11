@@ -571,6 +571,7 @@ contract test {
   // uint y5 = 0.0025 * 1e18;
   uint z = 0x11_22;
   uint z2 = 0x1122;
+  uint z3 = 1_122;
 }
 
 contract test {

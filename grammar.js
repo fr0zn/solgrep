@@ -942,8 +942,9 @@ module.exports = grammar({
         string_literal: $ => prec.left(repeat1($.string)),
         number_literal: $ => seq(choice($._decimal_number, $._hex_number), optional($.number_unit)),
         _decimal_number: $ =>  choice(
-            /\d+(\.\d+)?([eE](-)?\d+)?/,
-            /\.\d+([eE](-)?\d+)?/,
+            // Numbers can have underscores
+            /[0-9_]+(\.[0-9_]+)?([eE](-)?[0-9_]+)?/,
+            /\.[0-9_]+([eE](-)?[0-9_]+)?/,
         ),
         _hex_number: $ => seq(/0[xX]/, optional(optionalDashSeparation($._hex_digit))),
         _hex_digit: $ => /[\da-fA-F](_?[\da-fA-F])*/,
