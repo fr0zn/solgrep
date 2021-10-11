@@ -56,10 +56,10 @@ If statement
 contract Example {
     function example() {
         if (a) {
-            
-        } 
+
+        }
         if (d) {} else {
-            b; 
+            b;
         }
         if (a) 1;
 
@@ -333,3 +333,25 @@ contract Example {
                   (primitive_type))
                 (identifier)))))))))
 
+================================================================================
+Unchecked block statement
+================================================================================
+
+contract Example {
+    function test() external {
+        unchecked {
+        }
+    }
+}
+--------------------------------------------------------------------------------
+
+(source_file
+  (contract_declaration
+    name: (identifier)
+    body: (contract_body
+      (function_definition
+        function_name: (identifier)
+        (visibility)
+        body: (function_body
+          (unchecked_block
+            (block_statement)))))))

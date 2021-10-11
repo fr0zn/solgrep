@@ -207,7 +207,7 @@ contract test {
 contract test {
     function fun(uint256 a) {
         if (a >= 8) {
-            return ; 
+            return ;
         } else {
             var b = 7;
         }
@@ -789,6 +789,18 @@ contract Example{
                     }
                 }
             }
+        }
+    }
+}
+
+contract Example {
+    function test() external {
+        uint256 x = 1234;
+        unchecked {
+            x += 2;
+        }
+        unchecked {
+            x += 2;
         }
     }
 }

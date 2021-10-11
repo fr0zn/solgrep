@@ -271,6 +271,7 @@ module.exports = grammar({
         // -- [ Statements ] --
         _statement: $ => choice(
             $.block_statement,
+            $.unchecked_block,
             $.expression_statement,
             $.variable_declaration_statement,
             $.if_statement,
@@ -444,6 +445,7 @@ module.exports = grammar({
 
         // -- [ Statements ] --
         block_statement: $ => seq('{', repeat($._statement), "}"),
+        unchecked_block: $ => seq('unchecked', $.block_statement),
         variable_declaration_statement: $ => prec(3,
             seq(
                 choice(
