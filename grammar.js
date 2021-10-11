@@ -312,7 +312,9 @@ module.exports = grammar({
         yul_break: $ => "break",
         yul_continue: $ => "continue",
 
-        yul_identifier: $ => /[a-zA-Z$_]+/,
+        // Yul identifiers consist of letters, dollar signs, underscores and numbers, but may not start with a number.
+        yul_identifier: $ => /[a-zA-Z$_]([a-zA-Z0-9$_]+)?/,
+
         // The usage of `yul_evm_builtin` here is for solidity pragma version < 0.6.0
         _yul_expression: $ => choice($.yul_path, $.yul_function_call, $._yul_literal, $.yul_evm_builtin),
         yul_path: $ => prec.left(dotSep1($.yul_identifier)),

@@ -761,3 +761,33 @@ contract Example{
     event Log1_fnc(function() external callback);
     function query1_fnc(function() external _fnc) external {}
 }
+
+contract Example{
+    function test() external {
+        assembly {
+            // underscore yul identifier with numbers
+            mstore(add(sessionKeyHash, 0x20), sessionKeyHash_bytes32)
+        }
+    }
+}
+
+contract Example{
+
+    function test() external {
+        assembly {
+			function power(a, exponent) -> result {
+                switch exponent
+                case 0 { result := 1 }
+                case 1 { result := a }
+                default {
+                    result := power(mul(a, a), div(exponent, 2))
+                    switch mod(exponent, 2)
+                    case 1 {
+                    result := mul(a, result)
+                    leave
+                    }
+                }
+            }
+        }
+    }
+}
