@@ -29,7 +29,7 @@ const PREC = {
 
 // The following is the core grammar for Solidity. It accepts Solidity smart contracts between the versions 0.4.x and 0.7.x.
 module.exports = grammar({
-    name: 'solidity',
+    name: 'Solidity',
 
     // Extras is an array of tokens that is allowed anywhere in the document.
     extras: $ => [
