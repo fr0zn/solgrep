@@ -9,12 +9,14 @@ def compare_levels(_src_root, _search_root, ellipsisNode, compareFunction, srcIn
     # that this branch has fully matched
     if len(_search_children) == 0:
         return True
+    
+    # If the 
     # for e in search:
     # Iterate over all src nodes
     added_meta = []
     while search_index < len(_search_children):
         
-        if compareFunction(_search_children[search_index], ellipsisNode, []):
+        if compareFunction(_search_children[search_index], ellipsisNode, [], data={}):
             in_ellipsis = True
             search_index += 1
             continue
@@ -28,7 +30,10 @@ def compare_levels(_src_root, _search_root, ellipsisNode, compareFunction, srcIn
         if src_index >= len(_src_children):
             return False
         
-        if compareFunction(_search_children[search_index], _src_children[src_index], added_meta):
+        data = {}
+        if compareFunction(_search_children[search_index], _src_children[src_index], added_meta, data=data):
+            if data['skipChilds']:
+                return True
             _match = compare_levels(
                 _src_children[src_index], 
                 _search_children[search_index],

@@ -176,10 +176,18 @@ class SolidityQuery():
     #     self.src
     #     print(capture)
 
-    def _compareNodes(self, searchNode, compareNode, added_meta):
+    def _compareNodes(self, searchNode, compareNode, added_meta, data={}):
+        data['skipChilds'] = False
         # The compareNode can be an ellipsis
         if searchNode.type == compareNode.type:
             _gtype = searchNode.type
+            if _gtype in [
+                'contract_declaration',
+                'contract_body',
+                # TODO:
+                'state_variable_declaration',
+            ]:
+                return True
             if _gtype == 'ellipsis':
                 return True
             elif _gtype == 'identifier':
@@ -196,8 +204,20 @@ class SolidityQuery():
                         return self.query_metavars[self.query_metavars_index][_metavar] == _content
                 # True if both identifiers are the same
                 return searchNode.content == compareNode.content
+            elif _gtype == 'string_literal':
+                # Removes ' and "
+                _merged_compare = ''.join([c.content[1:-1] for c in compareNode.children])
+                _merged_search = ''.join([c.content[1:-1] for c in searchNode.children])
+                data['skipChilds'] = True
+                return bool(re.search(_merged_search, _merged_compare))
 
-            return True
+                # _merged
+
+            # return True
+            # return True
+            print(_gtype)
+            print(searchNode.content , compareNode.content)
+            return searchNode.content == compareNode.content
         else:
             return False
     
