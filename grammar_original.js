@@ -203,19 +203,21 @@ module.exports = grammar({
             optional(field("ancestor_arguments", $._call_arguments)),
         ),
 
+        _contract_body: $ => choice(
+            $.function_definition,
+            $.modifier_definition,
+            $.state_variable_declaration,
+            $.struct_declaration,
+            $.enum_declaration,
+            $.event_definition,
+            $.using_directive,
+            $.constructor_definition,
+            $.fallback_receive_definition,
+        ),
+
         contract_body: $  => seq(
             "{",
-            repeat(choice(
-                $.function_definition,
-                $.modifier_definition,
-                $.state_variable_declaration,
-                $.struct_declaration,
-                $.enum_declaration,
-                $.event_definition,
-                $.using_directive,
-                $.constructor_definition,
-                $.fallback_receive_definition,
-            )),
+            repeat($._contract_body),
             "}",
         ),
 
@@ -614,17 +616,19 @@ module.exports = grammar({
             choice($._semicolon, field('body', $.function_body))
         ),
 
+        _function_extra: $ => choice(
+            $.modifier_invocation,
+            $.visibility,
+            $.state_mutability,
+            $.virtual,
+            $.override_specifier,
+        ),
+
         function_definition: $ => seq(
             "function",
             field("function_name", $.identifier),
             $._parameter_list,
-            repeat(choice(
-                $.modifier_invocation,
-                $.visibility,
-                $.state_mutability,
-                $.virtual,
-                $.override_specifier,
-            )),
+            repeat($._function_extra),
             field("return_type", optional($.return_type_definition)),
             choice($._semicolon, field('body', $.function_body))
         ),
@@ -896,7 +900,7 @@ module.exports = grammar({
             $._user_defined_type
         ),
 
-        primitive_type: $ => prec.left(choice(
+        _primitive_type: $ => choice(
             seq('address', optional('payable')),
             'bool',
             'string',
@@ -906,7 +910,9 @@ module.exports = grammar({
             $._bytes,
             $._fixed,
             $._ufixed,
-        )),
+        ), 
+
+        primitive_type: $ => prec.left($._primitive_type),
 
         _int: $ => choice (
             'int', 'int8', 'int16', 'int24', 'int32', 'int40', 'int48', 'int56', 'int64', 'int72', 'int80', 'int88', 'int96', 'int104', 'int112', 'int120', 'int128', 'int136', 'int144', 'int152', 'int160', 'int168', 'int176', 'int184', 'int192', 'int200', 'int208', 'int216', 'int224', 'int232', 'int240', 'int248', 'int256'

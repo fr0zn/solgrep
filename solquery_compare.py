@@ -1,5 +1,5 @@
 # This function assumes that _src_root and _search_root are equal
-def compare_levels(_src_root, _search_root, ellipsisNode, compareFunction, srcIndexStart=0, metaVars={}):
+def compare_levels(_src_root, _search_root, ellipsisNode, compareFunction, isSkipFunction, afterSkipFunction, isMatchFunction, srcIndexStart=0):
     _src_children = _src_root.children[srcIndexStart:]
     _search_children = _search_root.children
     src_index = 0
@@ -13,10 +13,11 @@ def compare_levels(_src_root, _search_root, ellipsisNode, compareFunction, srcIn
     # If the 
     # for e in search:
     # Iterate over all src nodes
-    added_meta = []
+    # added_meta = []
+    # data = {}
     while search_index < len(_search_children):
         
-        if compareFunction(_search_children[search_index], ellipsisNode, [], data={}):
+        if compareFunction(_search_children[search_index], ellipsisNode):
             in_ellipsis = True
             search_index += 1
             continue
@@ -30,9 +31,8 @@ def compare_levels(_src_root, _search_root, ellipsisNode, compareFunction, srcIn
         if src_index >= len(_src_children):
             return False
         
-        data = {}
-        if compareFunction(_search_children[search_index], _src_children[src_index], added_meta, data=data):
-            if data['skipChilds']:
+        if compareFunction(_search_children[search_index], _src_children[src_index]):
+            if isSkipFunction():
                 return True
             _match = compare_levels(
                 _src_children[src_index], 
@@ -40,15 +40,18 @@ def compare_levels(_src_root, _search_root, ellipsisNode, compareFunction, srcIn
                 ellipsisNode=ellipsisNode,
                 compareFunction=compareFunction,
                 srcIndexStart=0,
-                metaVars=metaVars
+                isMatchFunction=isMatchFunction,
+                isSkipFunction=isSkipFunction,
+                afterSkipFunction=afterSkipFunction
                 )
             # If this branch produces no match, try with other src childs
             if not _match:
                 if in_ellipsis:
                     # We will need to remove created metavars for the current branch
                     # if not a full match
-                    for added in added_meta:
-                        metaVars.pop(added)
+                    afterSkipFunction()
+                    # for added in data['addedMeta']:
+                    #     metaVars.pop(added)
                     # beforeMetaVar = dict(metaVars)
                     # print('A',metaVars)
                     # metaVars = {}
@@ -57,6 +60,7 @@ def compare_levels(_src_root, _search_root, ellipsisNode, compareFunction, srcIn
                     return False
                 # return False
             else:
+                isMatchFunction(_src_children[src_index])
                 # metaVars.update(tmp_metavar)
                 # metaVars = dict(metaVars.items() & tmp_metavar.items())
                 # tmp_metavar = metaVars.copy()

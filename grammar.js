@@ -69,6 +69,53 @@ module.exports = grammar(standard_grammar, {
       );
     },
 
+    _contract_body: ($, previous) => {
+      return choice(
+        ...previous.members,
+        $.ellipsis
+      );
+    },
+
+    _primitive_type: ($, previous) => {
+      return choice(
+        ...previous.members,
+        /TYPE([0-9]+)?/ 
+      );
+    },
+    visibility: ($, previous) => {
+      return choice(
+        ...previous.members,
+        /VISIBILITY([0-9]+)?/ 
+      );
+    },
+    state_mutability: ($, previous) => {
+      return choice(
+        ...previous.members,
+        /STATE([0-9]+)?/ 
+      );
+    },
+
+    pragma_versions: $ => choice(
+      'VERSION',
+      repeat1(field("version_constraint", $._pragma_version_constraint)),
+    ),
+
+    solidity_directive: $ => seq(
+      "solidity",
+      $.pragma_versions,
+    ),
+
+    experimental_directives: $ => choice(
+      'EXPERIMENTAL',
+      seq(optional('"'), $._experimental_directives, optional('"')),
+    ),
+
+    experimental_directive: $ => seq(
+      "experimental",
+      $.experimental_directives
+    ),
+
+
     // Allows
     // function(..., uint256 x) {}
     _parameter_list: $ => seq(
