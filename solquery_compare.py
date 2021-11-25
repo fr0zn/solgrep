@@ -1,5 +1,5 @@
 # This function assumes that _src_root and _search_root are equal
-def compare_levels(_src_root, _search_root, ellipsisNode, compareFunction, isSkipFunction, afterSkipFunction, isMatchFunction, srcIndexStart=0):
+def compare_levels(_src_root, _search_root, ellipsisNode, commaNode, compareFunction, isSkipFunction, afterSkipFunction, isMatchFunction, srcIndexStart=0):
     _src_children = _src_root.children[srcIndexStart:]
     _search_children = _search_root.children
     src_index = 0
@@ -22,14 +22,23 @@ def compare_levels(_src_root, _search_root, ellipsisNode, compareFunction, isSki
             search_index += 1
             continue
 
-        # None ellipsis element on search
-        # check for match, if no match increment src index
-        # if match, continue with next search
-
         # If we have more search nodes than src nodes
         # That means we are exhausting the src length
         if src_index >= len(_src_children):
             return False
+
+        if compareFunction(_search_children[search_index], commaNode):
+            search_index += 1
+            continue
+
+        if compareFunction(_src_children[src_index], commaNode):
+            src_index += 1
+            continue
+
+        # None ellipsis element on search
+        # check for match, if no match increment src index
+        # if match, continue with next search
+
         
         if compareFunction(_search_children[search_index], _src_children[src_index]):
             if isSkipFunction():
@@ -38,6 +47,7 @@ def compare_levels(_src_root, _search_root, ellipsisNode, compareFunction, isSki
                 _src_children[src_index], 
                 _search_children[search_index],
                 ellipsisNode=ellipsisNode,
+                commaNode=commaNode,
                 compareFunction=compareFunction,
                 srcIndexStart=0,
                 isMatchFunction=isMatchFunction,

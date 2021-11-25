@@ -94,6 +94,12 @@ module.exports = grammar(standard_grammar, {
         /STATE([0-9]+)?/ 
       );
     },
+    storage_location: ($, previous) => {
+      return choice(
+        ...previous.members,
+        /STORAGE([0-9]+)?/ 
+      );
+    },
 
     pragma_versions: $ => choice(
       'VERSION',
@@ -115,10 +121,9 @@ module.exports = grammar(standard_grammar, {
       $.experimental_directives
     ),
 
-
     // Allows
     // function(..., uint256 x) {}
-    _parameter_list: $ => seq(
+    parameter_list: $ => seq(
       '(', 
       commaSep(choice($.parameter, $.ellipsis)), 
       ')'

@@ -45,7 +45,7 @@ module.exports = grammar({
 
     conflicts: $ => [
         [$._primary_expression, $.type_name],
-        [$._parameter_list, $.fallback_receive_definition],
+        [$.parameter_list, $.fallback_receive_definition],
         [$._primary_expression, $.type_cast_expression],
         [$._yul_expression, $.yul_path],
         [$._yul_expression, $.yul_assignment],
@@ -463,7 +463,7 @@ module.exports = grammar({
 
         variable_declaration: $ => seq(
             $.type_name,
-            optional(choice('memory', 'storage', 'calldata')),
+            optional($.storage_location),
             field('name', $.identifier)
         ),
 
@@ -514,11 +514,11 @@ module.exports = grammar({
         break_statement: $ => seq('break', $._semicolon),
 
         try_statement: $ => seq(
-            'try', $._expression, optional(seq('returns', $._parameter_list)), $.block_statement, repeat1($.catch_clause),
+            'try', $._expression, optional(seq('returns', $.parameter_list)), $.block_statement, repeat1($.catch_clause),
         ),
 
         catch_clause: $ => seq(
-            'catch', optional(seq(optional($.identifier), $._parameter_list)), $.block_statement,
+            'catch', optional(seq(optional($.identifier), $.parameter_list)), $.block_statement,
         ),
 
         return_statement: $ => seq(
@@ -575,7 +575,7 @@ module.exports = grammar({
         modifier_definition: $ => seq(
             "modifier",
             field("name", $.identifier),
-            optional($._parameter_list),
+            optional($.parameter_list),
             repeat(choice(
                 $.virtual,
                 $.override_specifier,
@@ -585,7 +585,7 @@ module.exports = grammar({
 
         constructor_definition: $ => seq(
             'constructor',
-            $._parameter_list,
+            $.parameter_list,
             repeat(choice(
                 $.modifier_invocation,
                 'payable',
@@ -627,7 +627,7 @@ module.exports = grammar({
         function_definition: $ => seq(
             "function",
             field("function_name", $.identifier),
-            $._parameter_list,
+            $.parameter_list,
             repeat($._function_extra),
             field("return_type", optional($.return_type_definition)),
             choice($._semicolon, field('body', $.function_body))
@@ -635,7 +635,7 @@ module.exports = grammar({
 
         return_type_definition: $ => seq(
             'returns',
-            $._parameter_list,
+            $.parameter_list,
         ),
 
         virtual: $ => "virtual",
@@ -853,7 +853,7 @@ module.exports = grammar({
 
         _function_type: $ => prec.right(seq(
             'function',
-            $._parameter_list,
+            $.parameter_list,
             repeat(choice(
                 $.visibility,
                 $.state_mutability,
@@ -861,22 +861,22 @@ module.exports = grammar({
             field("return_type", optional($.return_type_definition)),
         )),
 
-        _parameter_list: $ => seq(
+        parameter_list: $ => seq(
             '(', commaSep($.parameter), ')'
         ),
 
         _nameless_parameter: $ =>  seq(
             $.type_name,
-            optional($._storage_location),
+            optional($.storage_location),
         ),
 
         parameter: $ =>  seq(
             field("type", $.type_name),
-            optional(field("storage_location", $._storage_location)),
+            optional(field("storage_location", $.storage_location)),
             optional(field("name", $.identifier)),
         ),
 
-        _storage_location: $ => choice(
+        storage_location: $ => choice(
             'memory',
             'storage',
             'calldata'

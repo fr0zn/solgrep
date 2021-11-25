@@ -170,13 +170,19 @@ class SolidityQuery():
         # _content = _content + '\n...'
         return (_content, self.parser.parse(bytes(_content, 'utf8')))
 
-    def load_source(self, fileName):
+    def load_source_string(self, string):
+        _content = string
+        _tree = self.parser.parse(bytes(_content, 'utf8'))
+        self.src = TreeRoot(_content, _tree.root_node)
+        return self.src
+
+    def load_source_file(self, fileName):
         _content, _tree = self._parse_file(fileName)
         # TODO: Checks MISSING ERROR
         self.src = TreeRoot(_content, _tree.root_node)
         return self.src
 
-    def load_yaml(self, fileName):
+    def load_query_yaml(self, fileName):
         with open(fileName, "r") as stream:
             try:
                 _data = yaml.safe_load(stream)
@@ -192,7 +198,13 @@ class SolidityQuery():
         # TODO: Checks MISSING ERROR
         return self.queries
 
-    def load_query(self, fileName):
+    def load_query_string(self, string):
+        _content = string
+        _tree = self.parser.parse(bytes(_content, 'utf8'))
+        self.queries = TreeRoot(_content, _tree.root_node)
+        return self.queries
+
+    def load_query_file(self, fileName):
         _content, _tree = self._parse_file(fileName)
         # TODO: Checks MISSING ERROR
         self.queries = TreeRoot(_content, _tree.root_node)
@@ -297,6 +309,14 @@ class SolidityQuery():
                         compareNode.content 
                     )
                 return searchNode.content == compareNode.content
+            elif _gtype == 'storage_location':
+                _scontent = searchNode.content
+                if _scontent.startswith('STORAGE'):
+                    return self._add_meta_compare(
+                        _scontent,
+                        compareNode.content 
+                    )
+                return searchNode.content == compareNode.content
             elif _gtype == 'pragma_versions':
                 _scontent = searchNode.content
                 if _scontent.startswith('VERSION'):
@@ -343,6 +363,7 @@ class SolidityQuery():
     
     def _do_query(self):
         ellipsis_node = TreeNode('ellipsis', None, '...')
+        commaNode = TreeNode(',', None, ',')
         # We are getting the firs rule of the query as an start point
         # If we find any we will get the parent, and pre/appended ellipsis
         # during query load will do the rest
@@ -389,6 +410,7 @@ class SolidityQuery():
                 # child 
                 _match = compare_levels(_src_parent, _query_parent, 
                         ellipsisNode=ellipsis_node,
+                        commaNode=commaNode,
                         compareFunction=self._compareNodes,
                         srcIndexStart=_srcIndexStart,
                         isSkipFunction=self._is_skip,
@@ -428,22 +450,21 @@ Metavars:
         # print([x.is_match for x in self.query_states])
         # print([x._matched_nodes for x in self.query_states])
         print('=============')
+        return self.query_states
 
     def query(self):
-        captures = None
         # for i,query in enumerate(self.queries):
-        self._do_query()
+        return self._do_query()
 
-        return captures
         print(sexp_format(query_sexp))
         captures = query.captures(self.src_treecontent.root)
         self._parse_captures_with_meta(captures)
         return captures
 
 sq = SolidityQuery()
-t = sq.load_source('test.sol')
-# qs = sq.load_yaml('query.yaml')
-qs = sq.load_query('query.sol')
+t = sq.load_source_file('test.sol')
+# qs = sq.load_query_yaml('query.yaml')
+qs = sq.load_query_file('query.sol')
 
 # t.dot()
 
@@ -453,7 +474,7 @@ qs = sq.load_query('query.sol')
 #     print(q.get_sexp())
 #     print(q.metavars)
 
-sq.query()
+print(sq.query())
 
 
 # sq.format_query()
