@@ -38,19 +38,28 @@ class TreeNode(NodeMixin):
         self.name = "{}".format(type)
         self.type = type
         self.node = node
-        self.content = content
         self.parent = parent
         self.is_named = node.is_named if node else False
         self.is_ellipsis = False
         self.is_comma = False
+        self.content = content
         if children:
             self.children = children
+
+
+    # def getcontent(self, start=0, end=-1):
+    #     if end == -1:
+    #         end = len(self.__content)
+    #     return self.__content[start:end].decode("utf-8")
+
+    # content=property(getcontent)
 
     def __repr__(self):
         return self.__str__()
 
     def sexp(self):
         return self.type
+
 
     def __str__(self):
         # return str(self.node)
@@ -171,15 +180,15 @@ class SolidityQuery():
         self.SOLIDITY_LANGUAGE = Language('build/solidity.so', 'solidity')
 
     def _parse_file(self, fileName):
-        _content = open(fileName).read()
+        _content = bytes(open(fileName).read(), 'utf8')
         # Append and prepend ellipsis to the query
         # _content = '...\n' + _content + '\n...'
         # _content = _content + '\n...'
-        return (_content, self.parser.parse(bytes(_content, 'utf8')))
+        return (_content, self.parser.parse(_content))
 
     def load_source_string(self, string):
-        _content = string
-        _tree = self.parser.parse(bytes(_content, 'utf8'))
+        _content = bytes(string, 'utf8')
+        _tree = self.parser.parse(_content)
         self.src = TreeRoot(_content, _tree.root_node)
         return self.src
 
@@ -295,14 +304,14 @@ class SolidityQuery():
             # ('contract_declaration', 'contract_declaration'): (lambda x: True, None),
             # ('contract_body', 'contract_body'): (lambda x: True, None),
             # ('state_variable_declaration', 'state_variable_declaration'): (lambda x: True, None),
-            ('identifier', 'identifier')                          : (self._compare_identifier, {'starts':'$'}),
-            ('identifier', 'number_literal')                      : (self._compare_identifier, {'starts':'$'}),
-            ('primitive_type', 'primitive_type')                  : (self._compare_identifier, {'starts':'TYPE', 'skip':True}),
-            ('visibility', 'visibility')                          : (self._compare_identifier, {'starts':'VISIBILITY'}),
-            ('state_mutability', 'state_mutability')              : (self._compare_identifier, {'starts':'STATE'}),
-            ('storage_location', 'storage_location')              : (self._compare_identifier, {'starts':'STORAGE'}),
-            ('pragma_versions', 'pragma_versions')                : (self._compare_identifier, {'starts':'VERSION', 'skip':True}),
-            ('experimental_directives', 'experimental_directives'): (self._compare_identifier, {'starts':'EXPERIMENTAL'}),
+            ('identifier', 'identifier')                          : (self._compare_identifier, {'starts':b'$'}),
+            ('identifier', 'number_literal')                      : (self._compare_identifier, {'starts':b'$'}),
+            ('primitive_type', 'primitive_type')                  : (self._compare_identifier, {'starts':b'TYPE', 'skip':True}),
+            ('visibility', 'visibility')                          : (self._compare_identifier, {'starts':b'VISIBILITY'}),
+            ('state_mutability', 'state_mutability')              : (self._compare_identifier, {'starts':b'STATE'}),
+            ('storage_location', 'storage_location')              : (self._compare_identifier, {'starts':b'STORAGE'}),
+            ('pragma_versions', 'pragma_versions')                : (self._compare_identifier, {'starts':b'VERSION', 'skip':True}),
+            ('experimental_directives', 'experimental_directives'): (self._compare_identifier, {'starts':b'EXPERIMENTAL'}),
             ('string_literal', 'string_literal')                  : (self._compare_strings, {}),
         }
         self.current_state._is_skip = False
@@ -331,7 +340,7 @@ class SolidityQuery():
         _single_statement = False
         for src_node in PreOrderIter(self.src.root):
             self.current_state = QueryStates()
-            # print('===========')
+            print('============= CHECKING NODES ================')
             # print(src_node)
             # print(query_first_rule)
             # print('===========')
@@ -377,7 +386,6 @@ class SolidityQuery():
 
                 print('=========== MATCH ============')
                 print(_match)
-                print(src_node)
                 print(self.query_states)
                 print('==============================')
                 # break
