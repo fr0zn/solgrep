@@ -41,7 +41,8 @@ class TreeNode(NodeMixin):
         self.content = content
         self.parent = parent
         self.is_named = node.is_named if node else False
-        self.is_meta = False
+        self.is_ellipsis = False
+        self.is_comma = False
         if children:
             self.children = children
 
@@ -92,6 +93,11 @@ class TreeRoot():
 
     def _parse_node(self, _node, _last_parent):
         node = TreeNode(_node.type, _node, self._src[_node.start_byte:_node.end_byte], parent=_last_parent)
+        if _node.type == 'ellipsis':
+            node.is_ellipsis = True
+        elif _node.type == ',':
+            node.is_comma = True
+
         if self.root == None:
             self.root = node
         # if node.type == 'identifier':
@@ -275,8 +281,10 @@ class SolidityQuery():
 
     def _compare_default(self, searchNode, compareNode, args):
         if searchNode.type == compareNode.type:
+            print('TRUE', searchNode.type, compareNode.type)
             return True
         else:
+            print('DIFF', searchNode.type, compareNode.type)
             return False
 
     # Search node -> Compare Node -> (handler, data)
@@ -298,7 +306,6 @@ class SolidityQuery():
             ('string_literal', 'string_literal')                  : (self._compare_strings, {}),
         }
         self.current_state._is_skip = False
-        print(searchNode.type, compareNode.type)
 
         _fnc, _data = SOLIDITY_NODES.get(
             (searchNode.type, compareNode.type),
@@ -308,15 +315,15 @@ class SolidityQuery():
         return _fnc(searchNode, compareNode, _data)
 
     def _do_query(self):
-        ellipsis_node = TreeNode('ellipsis', None, '...')
-        commaNode = TreeNode(',', None, ',')
+        # ellipsis_node = TreeNode('ellipsis', None, '...')
+        # commaNode = TreeNode(',', None, ',')
         # We are getting the firs rule of the query as an start point
         # If we find any we will get the parent, and pre/appended ellipsis
         # during query load will do the rest
         query_first_rule = None
         # Skip until the find the first rule of the query that is not an ellipsis
         for child in self.queries.root.children:
-            if not child.type == ellipsis_node.type:
+            if not child.is_ellipsis:
             # if not self._compareNodes(child, ellipsis_node):
                 query_first_rule = child
                 break
@@ -355,8 +362,8 @@ class SolidityQuery():
                 # rule but skipped n times, where n is the index of the found
                 # child
                 _match = compare_levels(_src_parent, _query_parent,
-                        ellipsisNode=ellipsis_node,
-                        commaNode=commaNode,
+                        # ellipsisNode=ellipsis_node,
+                        # commaNode=commaNode,
                         compareFunction=self._compareNodes,
                         srcIndexStart=_srcIndexStart,
                         isSkipFunction=self._is_skip,
