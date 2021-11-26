@@ -28,13 +28,19 @@ def compare_levels(_src_root, _search_root, compareFunction, isSkipFunction, aft
         if src_index >= len(_src_children):
             return False
 
-        # if compareFunction(_search_children[search_index], commaNode):
         if _search_children[search_index].is_comma:
             search_index += 1
             continue
 
-        # if compareFunction(_src_children[src_index], commaNode):
         if _src_children[src_index].is_comma:
+            src_index += 1
+            continue
+
+        if _search_children[search_index].is_comment:
+            search_index += 1
+            continue
+
+        if _src_children[src_index].is_comment:
             src_index += 1
             continue
 

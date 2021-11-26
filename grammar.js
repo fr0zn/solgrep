@@ -79,30 +79,30 @@ module.exports = grammar(standard_grammar, {
     _primitive_type: ($, previous) => {
       return choice(
         ...previous.members,
-        /TYPE([0-9]+)?/ 
+        /\$TYPE([0-9]+)?/ 
       );
     },
     visibility: ($, previous) => {
       return choice(
         ...previous.members,
-        /VISIBILITY([0-9]+)?/ 
+        /\$VISIBILITY([0-9]+)?/ 
       );
     },
     state_mutability: ($, previous) => {
       return choice(
         ...previous.members,
-        /STATE([0-9]+)?/ 
+        /\$STATE([0-9]+)?/ 
       );
     },
     storage_location: ($, previous) => {
       return choice(
         ...previous.members,
-        /STORAGE([0-9]+)?/ 
+        /\$STORAGE([0-9]+)?/ 
       );
     },
 
     pragma_versions: $ => choice(
-      'VERSION',
+      '$VERSION',
       repeat1(field("version_constraint", $._pragma_version_constraint)),
     ),
 
@@ -112,7 +112,7 @@ module.exports = grammar(standard_grammar, {
     ),
 
     experimental_directives: $ => choice(
-      'EXPERIMENTAL',
+      '$EXPERIMENTAL',
       seq(optional('"'), $._experimental_directives, optional('"')),
     ),
 

@@ -42,6 +42,7 @@ class TreeNode(NodeMixin):
         self.is_named = node.is_named if node else False
         self.is_ellipsis = False
         self.is_comma = False
+        self.is_comment = False
         self.content = content
         if children:
             self.children = children
@@ -106,6 +107,8 @@ class TreeRoot():
             node.is_ellipsis = True
         elif _node.type == ',':
             node.is_comma = True
+        elif _node.type == 'comment':
+            node.is_comment = True
 
         if self.root == None:
             self.root = node
@@ -180,17 +183,23 @@ class SolidityQuery():
         self.SOLIDITY_LANGUAGE = Language('build/solidity.so', 'solidity')
 
     def _parse_file(self, fileName):
-        _content = bytes(open(fileName).read(), 'utf8')
+        _content = bytes(open(fileName).read().strip(), 'utf8')
         # Append and prepend ellipsis to the query
         # _content = '...\n' + _content + '\n...'
         # _content = _content + '\n...'
         return (_content, self.parser.parse(_content))
 
     def load_source_string(self, string):
-        _content = bytes(string, 'utf8')
+        _content = bytes(string.strip(), 'utf8')
         _tree = self.parser.parse(_content)
         self.src = TreeRoot(_content, _tree.root_node)
         return self.src
+
+    def load_query_string(self, string):
+        _content = bytes(string.strip(), 'utf8')
+        _tree = self.parser.parse(_content)
+        self.queries = TreeRoot(_content, _tree.root_node)
+        return self.queries
 
     def load_source_file(self, fileName):
         _content, _tree = self._parse_file(fileName)
@@ -214,32 +223,12 @@ class SolidityQuery():
         # TODO: Checks MISSING ERROR
         return self.queries
 
-    def load_query_string(self, string):
-        _content = string
-        _tree = self.parser.parse(bytes(_content, 'utf8'))
-        self.queries = TreeRoot(_content, _tree.root_node)
-        return self.queries
 
     def load_query_file(self, fileName):
         _content, _tree = self._parse_file(fileName)
         # TODO: Checks MISSING ERROR
         self.queries = TreeRoot(_content, _tree.root_node)
         return self.queries
-
-    # def _parse_query(self, query_root):
-    #     for query_node in PreOrderIter(query_root):
-    #         if query_node.type == 'identifier':
-    #             _content = query_node.content
-    #             if query_node.content not in self.metavars:
-    #                 self.metavars[_content] = None #MetaVar(query_node)
-    #         # print(_content)
-
-    # def get_node_content(self, node, src):
-    #     return src[node.start_byte:node.end_byte]
-
-    # def _parse_captures(self, capture):
-    #     self.src
-    #     print(capture)
 
     def _is_skip(self):
         return self.current_state._is_skip
@@ -282,9 +271,14 @@ class SolidityQuery():
 
     def _compare_strings(self, searchNode, compareNode, args):
         # Removes ' and "
-        _merged_compare = ''.join([c.content[1:-1] for c in compareNode.children])
-        _merged_search = ''.join([c.content[1:-1] for c in searchNode.children])
+        _merged_compare = ''.join([c.content[1:-1].decode('utf8') for c in compareNode.children if c.type != 'comment'])
+        _merged_search = ''.join([c.content[1:-1].decode('utf8') for c in searchNode.children if c.type != 'comment'])
         self.current_state._is_skip = True
+        if _merged_search.startswith('$STRING'):
+           return self._add_meta_compare(
+                _merged_search,
+                _merged_compare
+            )
         return bool(re.search(_merged_search, _merged_compare))
 
 
@@ -306,12 +300,12 @@ class SolidityQuery():
             # ('state_variable_declaration', 'state_variable_declaration'): (lambda x: True, None),
             ('identifier', 'identifier')                          : (self._compare_identifier, {'starts':b'$'}),
             ('identifier', 'number_literal')                      : (self._compare_identifier, {'starts':b'$'}),
-            ('primitive_type', 'primitive_type')                  : (self._compare_identifier, {'starts':b'TYPE', 'skip':True}),
-            ('visibility', 'visibility')                          : (self._compare_identifier, {'starts':b'VISIBILITY'}),
-            ('state_mutability', 'state_mutability')              : (self._compare_identifier, {'starts':b'STATE'}),
-            ('storage_location', 'storage_location')              : (self._compare_identifier, {'starts':b'STORAGE'}),
-            ('pragma_versions', 'pragma_versions')                : (self._compare_identifier, {'starts':b'VERSION', 'skip':True}),
-            ('experimental_directives', 'experimental_directives'): (self._compare_identifier, {'starts':b'EXPERIMENTAL'}),
+            ('primitive_type', 'primitive_type')                  : (self._compare_identifier, {'starts':b'$TYPE', 'skip':True}),
+            ('visibility', 'visibility')                          : (self._compare_identifier, {'starts':b'$VISIBILITY'}),
+            ('state_mutability', 'state_mutability')              : (self._compare_identifier, {'starts':b'$STATE'}),
+            ('storage_location', 'storage_location')              : (self._compare_identifier, {'starts':b'$STORAGE'}),
+            ('pragma_versions', 'pragma_versions')                : (self._compare_identifier, {'starts':b'$VERSION', 'skip':True}),
+            ('experimental_directives', 'experimental_directives'): (self._compare_identifier, {'starts':b'$EXPERIMENTAL'}),
             ('string_literal', 'string_literal')                  : (self._compare_strings, {}),
         }
         self.current_state._is_skip = False
@@ -401,7 +395,7 @@ Content {} - {}:
 {}
 
 Metavars:
-{}'''.format(_start, _end, self.src.root.content[_start:_end], query_result.meta_vars))
+{}'''.format(_start, _end, self.src.root.content[_start:_end].decode('utf8'), query_result.meta_vars))
                 # print(_start, _end)
                 # print('-------------')
                 # print(self.src.root.content[_start:_end])

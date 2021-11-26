@@ -24,16 +24,37 @@ pragma solidity 0.7.0
 pragma solidity >0.7.0 <=0.8.0;
 ''',
 '''
-pragma solidity VERSION; 
+pragma solidity $VERSION;
 ''',
         # Matching
         [ True, ],
         # Metavars
         [
-            {'VERSION': '>0.7.0 <=0.8.0'},
+            {b'$VERSION': b'>0.7.0 <=0.8.0'},
         ],
         # Match from/to
         [ (0,31), ]
+
+    ),
+    (
+'''
+function NAME(){
+    string memory a = "asdf"
+    /* comment */
+    "more";
+}
+''',
+'''
+string memory $A = '$STRING_5';
+''',
+        # Matching
+        [ True, ],
+        # Metavars
+        [
+            {b'$A': b'a', '$STRING_5': 'asdfmore'},
+        ],
+        # Match from/to
+        [ (21,77), ]
 
     ),
     (
@@ -50,7 +71,7 @@ function $NAME(..., address $C, ..., uint256 $NUM, ...) ... {
         [ True, ],
         # Metavars
         [
-            {'$NAME': 'setVars', '$C': '_contract', '$NUM': 'num'},
+            {b'$NAME': b'setVars', b'$C': b'_contract', b'$NUM': b'num'},
         ],
         # Match from/to
         [ (0,67), ]
@@ -75,11 +96,11 @@ contract Test {
 '''
 contract $NAME {
     ...
-    TYPE VISIBILITY $Y;
+    $TYPE $VISIBILITY $Y;
     ...
-    function $FNC() VISIBILITY STATE returns(TYPE[]) {
+    function $FNC() $VISIBILITY $STATE returns($TYPE[]) {
         ...
-        TYPE[$NUM] $VAR = new TYPE[]($NUM);
+        $TYPE[$NUM] $VAR = new $TYPE[]($NUM);
         ...
         return $VAR;
     }
@@ -90,7 +111,7 @@ contract $NAME {
         [ True, ],
         # Metavars
         [
-           {'$NAME': 'Test', 'TYPE': 'uint', 'VISIBILITY': 'public', '$Y': 'y', '$FNC': 'one', 'STATE': 'view', '$NUM': '10', '$VAR': 'a'}, 
+           {b'$NAME': b'Test', b'$TYPE': b'uint', b'$VISIBILITY': b'public', b'$Y': b'y', b'$FNC': b'one', b'$STATE': b'view', b'$NUM': b'10', b'$VAR': b'a'},
         ],
         # Match from/to
         [ (0,173), ]
