@@ -30,9 +30,9 @@ def sexp_format(sexp):
                 _inspace = True
         _str += c
 
-    return _str 
+    return _str
 
-class TreeNode(NodeMixin): 
+class TreeNode(NodeMixin):
     def __init__(self, type, node, content, parent=None, children=None):
         super(TreeNode, self).__init__()
         self.name = "{}".format(type)
@@ -44,13 +44,13 @@ class TreeNode(NodeMixin):
         self.is_meta = False
         if children:
             self.children = children
-    
+
     def __repr__(self):
         return self.__str__()
-    
+
     def sexp(self):
         return self.type
-    
+
     def __str__(self):
         # return str(self.node)
         # if len(self.children) == 0:
@@ -61,12 +61,12 @@ class TreeNode(NodeMixin):
 class TreeRoot():
     def __init__(self, _content, _root):
 
-        self.root = None 
+        self.root = None
 
         self._root = _root
         self._src = _content
 
-        self._sexp = '' 
+        self._sexp = ''
         self.rules = []
 
         # self.metavars = {}
@@ -98,10 +98,10 @@ class TreeRoot():
         #     _identifier = node.content
         #     if _identifier.startswith('$'):
         #         node.is_meta = True
-        #         if _identifier not in self.metavars: 
+        #         if _identifier not in self.metavars:
         #             self.metavars[_identifier] = None #MetaVar(node)
         return node
- 
+
     def _prepare_traverse(self):
         last_parent = None
         def _traverse(node, last_parent):
@@ -109,13 +109,13 @@ class TreeRoot():
             for child in node.children:
                 _traverse(child, last_parent)
         _traverse(self._root, last_parent)
-    
+
     def __str__(self):
         return str(RenderTree(self.root))
-    
+
     def dot(self):
         UniqueDotExporter(self.root).to_picture("TreeRoot.png")
-    
+
     # def __repr__(self) -> str:
     #     return self.__str__()
 
@@ -123,7 +123,7 @@ class TreeRoot():
 #     def __init__(self, node):
 #         self.node = node
 #         self.value = None
-    
+
 #     def __repr__(self):
 #         return "{}({})".format(self.node.content, self.value)
 
@@ -135,17 +135,18 @@ class QueryStates():
         self._matched_nodes = []
         self._is_skip = False
         self._added_meta = []
-    
+
     def get_range(self):
         if len(self._matched_nodes) > 0:
             return (self._matched_nodes[0].node.start_byte, self._matched_nodes[-1].node.end_byte)
         else:
             return (0, -1)
-    
+
     def __repr__(self) -> str:
         return '{} - {}'.format(self.is_match, self.meta_vars)
 
 class SolidityQuery():
+
     def __init__(self):
         self._build_load_library()
         self.parser = Parser()
@@ -154,9 +155,9 @@ class SolidityQuery():
         self.src = None
         self.queries = None
 
-        self.current_state = None 
+        self.current_state = None
 
-        # list of QueryStates() 
+        # list of QueryStates()
         self.query_states = []
 
     def _build_load_library(self):
@@ -209,7 +210,7 @@ class SolidityQuery():
         # TODO: Checks MISSING ERROR
         self.queries = TreeRoot(_content, _tree.root_node)
         return self.queries
-    
+
     # def _parse_query(self, query_root):
     #     for query_node in PreOrderIter(query_root):
     #         if query_node.type == 'identifier':
@@ -220,7 +221,7 @@ class SolidityQuery():
 
     # def get_node_content(self, node, src):
     #     return src[node.start_byte:node.end_byte]
-    
+
     # def _parse_captures(self, capture):
     #     self.src
     #     print(capture)
@@ -232,11 +233,11 @@ class SolidityQuery():
         for added in self.current_state._added_meta:
             self.current_state.meta_vars.pop(added)
         self.current_state._added_meta = []
-    
+
     def _is_match(self, node):
         self.current_state._matched_nodes.append(node)
         self.current_state._added_meta = []
-    
+
     def _add_meta_compare(self, _metavar, _content):
         # _metavar = searchNode.content
         # _content = compareNode.content
@@ -248,119 +249,64 @@ class SolidityQuery():
             # The node is equal if the metavar is the same
             return self.current_state.meta_vars[_metavar] == _content
 
-    def _compareNodes(self, searchNode, compareNode):
-        # data = self.query_data[self.query_index]
-        # metavars = data['metaVars']
-        self.current_state._is_skip = False
-        # data['skipChilds'] = False
-        # data['addedMeta'] = data.get('addedMeta', [])
-        # print(data)
-        # The compareNode can be an ellipsis
+
+    ######################################
+
+    def _compare_identifier(self, searchNode, compareNode, args):
+        _starts = args['starts']
+        _skip = args.get('skip', False)
+        if _skip:
+            self.current_state._is_skip = True
+        if searchNode.content.startswith(_starts):
+            return self._add_meta_compare(
+                searchNode.content,
+                compareNode.content
+            )
+        # True if both identifiers are the same
+        return searchNode.content == compareNode.content
+
+    def _compare_strings(self, searchNode, compareNode, args):
+        # Removes ' and "
+        _merged_compare = ''.join([c.content[1:-1] for c in compareNode.children])
+        _merged_search = ''.join([c.content[1:-1] for c in searchNode.children])
+        self.current_state._is_skip = True
+        return bool(re.search(_merged_search, _merged_compare))
+
+
+    def _compare_default(self, searchNode, compareNode, args):
         if searchNode.type == compareNode.type:
-            _gtype = searchNode.type
-            print('TYPE', _gtype, searchNode.content, compareNode.content)
-            if _gtype in [
-                'contract_declaration',
-                'contract_body',
-                # TODO:
-                'state_variable_declaration',
-            ]:
-                return True
-            if _gtype == 'ellipsis':
-                return True
-            elif _gtype == 'identifier':
-                # If the search content starts with $, thats a METAVAR
-                if searchNode.content.startswith('$'):
-                    return self._add_meta_compare(
-                        searchNode.content,
-                        compareNode.content 
-                    )
-                # True if both identifiers are the same
-                return searchNode.content == compareNode.content
-            elif _gtype == 'string_literal':
-                # Removes ' and "
-                _merged_compare = ''.join([c.content[1:-1] for c in compareNode.children])
-                _merged_search = ''.join([c.content[1:-1] for c in searchNode.children])
-                self.current_state._is_skip = True
-                return bool(re.search(_merged_search, _merged_compare))
-            elif _gtype == 'primitive_type':
-                _scontent = searchNode.content
-                if _scontent.startswith('TYPE'):
-                    # Needed to ignore the primitive_type child (aka type token)
-                    self.current_state._is_skip = True
-                    return self._add_meta_compare(
-                        _scontent,
-                        compareNode.content 
-                    )
-                return searchNode.content == compareNode.content
-            elif _gtype == 'visibility':
-                _scontent = searchNode.content
-                if _scontent.startswith('VISIBILITY'):
-                    return self._add_meta_compare(
-                        _scontent,
-                        compareNode.content 
-                    )
-                return searchNode.content == compareNode.content
-            elif _gtype == 'state_mutability':
-                _scontent = searchNode.content
-                if _scontent.startswith('STATE'):
-                    return self._add_meta_compare(
-                        _scontent,
-                        compareNode.content 
-                    )
-                return searchNode.content == compareNode.content
-            elif _gtype == 'storage_location':
-                _scontent = searchNode.content
-                if _scontent.startswith('STORAGE'):
-                    return self._add_meta_compare(
-                        _scontent,
-                        compareNode.content 
-                    )
-                return searchNode.content == compareNode.content
-            elif _gtype == 'pragma_versions':
-                _scontent = searchNode.content
-                if _scontent.startswith('VERSION'):
-                    # Needed to ignore the sub versions
-                    self.current_state._is_skip = True
-                    return self._add_meta_compare(
-                        _scontent,
-                        compareNode.content 
-                    ) 
-                # TODO: Check with metavar settings
-                return bool(re.search(searchNode.content, compareNode.content))
-
-            elif _gtype == 'experimental_directives':
-                _scontent = searchNode.content
-                if _scontent.startswith('EXPERIMENTAL'):
-                    # Needed to ignore the sub experimental checks
-                    self.current_state._is_skip = True
-                    return self._add_meta_compare(
-                        _scontent,
-                        compareNode.content 
-                    ) 
-                # TODO: Check with metavar settings
-                return bool(re.search(searchNode.content, compareNode.content))
-
-            # return True
-            # print(searchNode, compareNode)
-            # print(searchNode.content , compareNode.content)
             return True
-            # return searchNode.content == compareNode.content
         else:
-            # print('NTYPE', searchNode.content, compareNode.content)
-            if searchNode.type == 'identifier':
-                if compareNode.type == 'number_literal':
-                    if searchNode.content.startswith('$'):
-                        return self._add_meta_compare(
-                            searchNode.content,
-                            compareNode.content 
-                        )
-                    # Default is false if not a metavar and compared
-                    # against number
-                    return False
-            else:
-                return False
-    
+            return False
+
+    # Search node -> Compare Node -> (handler, data)
+
+    def _compareNodes(self, searchNode, compareNode):
+        SOLIDITY_NODES = {
+            # ('ellipsis', 'ellipsis'): (lambda x: True, None),
+            # ('contract_declaration', 'contract_declaration'): (lambda x: True, None),
+            # ('contract_body', 'contract_body'): (lambda x: True, None),
+            # ('state_variable_declaration', 'state_variable_declaration'): (lambda x: True, None),
+            ('identifier', 'identifier')                          : (self._compare_identifier, {'starts':'$'}),
+            ('identifier', 'number_literal')                      : (self._compare_identifier, {'starts':'$'}),
+            ('primitive_type', 'primitive_type')                  : (self._compare_identifier, {'starts':'TYPE', 'skip':True}),
+            ('visibility', 'visibility')                          : (self._compare_identifier, {'starts':'VISIBILITY'}),
+            ('state_mutability', 'state_mutability')              : (self._compare_identifier, {'starts':'STATE'}),
+            ('storage_location', 'storage_location')              : (self._compare_identifier, {'starts':'STORAGE'}),
+            ('pragma_versions', 'pragma_versions')                : (self._compare_identifier, {'starts':'VERSION', 'skip':True}),
+            ('experimental_directives', 'experimental_directives'): (self._compare_identifier, {'starts':'EXPERIMENTAL'}),
+            ('string_literal', 'string_literal')                  : (self._compare_strings, {}),
+        }
+        self.current_state._is_skip = False
+        print(searchNode.type, compareNode.type)
+
+        _fnc, _data = SOLIDITY_NODES.get(
+            (searchNode.type, compareNode.type),
+            (self._compare_default, {})
+            )
+
+        return _fnc(searchNode, compareNode, _data)
+
     def _do_query(self):
         ellipsis_node = TreeNode('ellipsis', None, '...')
         commaNode = TreeNode(',', None, ',')
@@ -407,8 +353,8 @@ class SolidityQuery():
                 # We are queriying using the full queries root content
                 # We use the parent of the found src node for the first query
                 # rule but skipped n times, where n is the index of the found
-                # child 
-                _match = compare_levels(_src_parent, _query_parent, 
+                # child
+                _match = compare_levels(_src_parent, _query_parent,
                         ellipsisNode=ellipsis_node,
                         commaNode=commaNode,
                         compareFunction=self._compareNodes,
