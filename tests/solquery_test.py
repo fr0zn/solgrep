@@ -16,7 +16,7 @@ patterns:
   - pattern: pragma solidity 0.7.0
 ''',
         # Report
-        [{'id': 'solidity-test', 'message': 'This is the message for testing\n', 'risk': 1, 'impact': 1, 'metavars': {}, 'bytesrange': (0, 22), 'linesrange': ((0, 0), (0, 22))}],
+        {'id': 'solidity-test', 'message': 'This is the message for testing', 'risk': 1, 'impact': 1, 'metavars': {}, 'bytesrange': [(0, 22)], 'linesrange': [((0, 0), (0, 22))]},
     ),
     (
 '''
@@ -25,7 +25,7 @@ pragma solidity >0.7.0 <=0.8.0;
 '''
 id: solidity-test 
 message: >
-  This is the message for testing {$VERSION}
+  This is the message for testing {{VERSION}}
 risk: 1
 impact: 1
 patterns:
@@ -34,7 +34,7 @@ metavars-regex:
   $VERSION: .*(=|>|<|^).*
 ''',
         # Report
-        [{'id': 'solidity-test', 'message': 'This is the message for testing >0.7.0 <=0.8.0\n', 'risk': 1, 'impact': 1, 'metavars': {'$VERSION': '>0.7.0 <=0.8.0'}, 'bytesrange': (0, 31), 'linesrange': ((0, 0), (0, 31))}],
+        {'id': 'solidity-test', 'message': "This is the message for testing ['>0.7.0 <=0.8.0']", 'risk': 1, 'impact': 1, 'metavars': {'VERSION': ['>0.7.0 <=0.8.0']}, 'bytesrange': [(0, 31)], 'linesrange': [((0, 0), (0, 31))]} 
 
     ),
     (
@@ -47,15 +47,17 @@ function NAME(){
 ''',
 '''
 id: solidity-test 
-message: >
-  This is the message for testing {$STRING_5}
+message: |
+  This is the message for testing {{STRING5}}
 risk: 1
 impact: 1
 patterns:
-  - pattern: string memory $A = '$STRING_5'; 
+  - pattern: string memory $A = '$STRING5'; 
+metavars-regex:
+  $STRING5: a.*
 ''',
         # Report
-        [{'id': 'solidity-test', 'message': 'This is the message for testing asdfmore\n', 'risk': 1, 'impact': 1, 'metavars': {'$A': 'a', '$STRING_5': 'asdfmore'}, 'bytesrange': (21, 75), 'linesrange': ((1, 4), (3, 11))}],
+        {'id': 'solidity-test', 'message': "This is the message for testing ['asdfmore']", 'risk': 1, 'impact': 1, 'metavars': {'A': ['a'], 'STRING5': ['asdfmore']}, 'bytesrange': [(21, 75)], 'linesrange': [((1, 4), (3, 11))]} 
 
     ),
     (
@@ -65,8 +67,8 @@ function setVars(address _contract, uint256 num) public payable {
 ''',
 '''
 id: solidity-test 
-message: >
-  This is the message for testing {$NAME}
+message: |
+  This is the message for testing {{NAME}} {{C}}, {{NUM}}
 risk: 1
 impact: 1
 patterns:
@@ -76,7 +78,7 @@ patterns:
       }
 ''',
         # Report
-        [ {'id': 'solidity-test', 'message': 'This is the message for testing setVars\n', 'risk': 1, 'impact': 1, 'metavars': {'$NAME': 'setVars', '$C': '_contract', '$NUM': 'num'}, 'bytesrange': (0, 67), 'linesrange': ((0, 0), (1, 1))} ],
+        {'id': 'solidity-test', 'message': "This is the message for testing ['setVars'] ['_contract'], ['num']", 'risk': 1, 'impact': 1, 'metavars': {'NAME': ['setVars'], 'C': ['_contract'], 'NUM': ['num']}, 'bytesrange': [(0, 67)], 'linesrange': [((0, 0), (1, 1))]} 
 
     ),
     (
@@ -97,8 +99,8 @@ contract Test {
 ''',
 '''
 id: solidity-test 
-message: >
-  This is the message for testing {$NAME}
+message: |
+  This is the message for testing {{NAME}} {{FNC}} {{TYPE}} {{NUM}}
 risk: 1
 impact: 1
 patterns:
@@ -117,7 +119,7 @@ patterns:
       }
 ''',
         # Report
-        [ {'id': 'solidity-test', 'message': 'This is the message for testing Test\n', 'risk': 1, 'impact': 1, 'metavars': {'$NAME': 'Test', '$TYPE': 'uint', '$VISIBILITY': 'public', '$FNC': 'one'}, 'bytesrange': (0, 173), 'linesrange': ((0, 0), (12, 1))} ],
+        {'id': 'solidity-test', 'message': "This is the message for testing ['Test'] ['one'] ['uint'] ", 'risk': 1, 'impact': 1, 'metavars': {'NAME': ['Test'], 'TYPE': ['uint'], 'VISIBILITY': ['public'], 'FNC': ['one']}, 'bytesrange': [(0, 173)], 'linesrange': [((0, 0), (12, 1))]} 
 
     ),
     (
@@ -139,8 +141,10 @@ contract Test {
 ''',
 '''
 id: solidity-test 
-message: >
-  This is the message for testing {$NAME}
+message: |
+  This is the message for testing{{ NAME | pluralize}}: {{ NAME | join(', ')}}
+  List:
+  {{ NAME | format_list('- {}')}}
 risk: 1
 impact: 1
 patterns:
@@ -156,7 +160,7 @@ metavars-regex:
   $VISIBILITY: .*
 ''',
         # Report
-        [{'id': 'solidity-test', 'message': 'This is the message for testing name\n', 'risk': 1, 'impact': 1, 'metavars': {'$NAME': 'name'}, 'bytesrange': (20, 52), 'linesrange': ((1, 4), (3, 5))}]
+        {'id': 'solidity-test', 'message': 'This is the message for testing: name\nList:\n- name', 'risk': 1, 'impact': 1, 'metavars': {'NAME': ['name']}, 'bytesrange': [(20, 52)], 'linesrange': [((1, 4), (3, 5))]} 
 
     ),
 ]

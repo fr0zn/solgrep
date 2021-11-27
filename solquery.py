@@ -1,7 +1,10 @@
+from sys import meta_path
 from solquery_compare import compare_levels
 from tree_sitter import Language, Parser
 from anytree import RenderTree, NodeMixin,PreOrderIter,LevelOrderGroupIter
 from anytree.exporter import DotExporter,UniqueDotExporter
+from jinja2 import Template
+from jinja2.filters import FILTERS
 import json
 import yaml
 import re
@@ -148,30 +151,48 @@ def decode_convert(data):
     if isinstance(data, tuple):  return map(decode_convert, data)
     return data
 
-class SafeDict(dict):
-    def __missing__(self, key):
-        return '{' + key + '}'
+def format_list(_list, pattern='{}', endline='\n'):
+    return endline.join([pattern.format(s) for s in _list])
+
+def pluralize(list, singular = '', plural = 's'):
+    if len(list) > 1:
+        return plural
+    else:
+        return singular
+
+FILTERS['pluralize'] = pluralize
+FILTERS['format_list'] = format_list
 class QueryRule():
     def __init__(self, id, message, risk, impact):
         self.id = id
-        self.message = message
+        self.message = Template(message)
         self.risk = risk
         self.impact = impact
+
     
     def _format_message_meta(self, metavars):
-        # new_data = { key.decode(): val.decode() for key, val in metavars.items() }
-        return self.message.format_map(SafeDict(metavars))
+        return self.message.render(metavars)
     
-    def report(self, query_result):
-        _metavars = decode_convert(query_result.meta_vars)
+    def report(self, matched_queries):
+        _metavars = {}
+        _bytesranges = []
+        _linesranges = []
+        for query in matched_queries:
+            _bytesranges.append(query.get_bytes_range())
+            _linesranges.append(query.get_range())
+            for key, value in query.meta_vars.items():  # in python 2 use D.iteritems() instead
+                # TODO: Assume meta with $
+                key = key[1:]
+                _metavars[key.decode('ascii')] = _metavars.get(key.decode('ascii'),[]) + [value.decode('ascii')]
+        
         _data = {
             'id': self.id,
             'message': self._format_message_meta(_metavars),
             'risk': self.risk,
             'impact': self.impact,
             'metavars': _metavars,
-            'bytesrange': query_result.get_bytes_range(),
-            'linesrange': query_result.get_range() 
+            'bytesrange': _bytesranges,
+            'linesrange': _linesranges 
         }
         return _data 
         # return json.dumps(_data)
@@ -369,8 +390,8 @@ class SolidityQuery():
         self.current_state._is_skip = True
         if _merged_search.startswith('$STRING'):
            return self._add_meta_compare(
-                _merged_search,
-                _merged_compare 
+                bytes(_merged_search,'utf8'),
+                bytes(_merged_compare, 'utf8')
             ) 
         return bool(re.search(_merged_search, _merged_compare))
 
@@ -526,6 +547,8 @@ class SolidityQuery():
 
     def report(self):
         _all_report = []
+        _matched_queries = [query for query in self.query_states if query.is_match]
+        return self.rule.report(_matched_queries)
         # Parsed a yaml rule
         print('================= RESULTS ==================')
         for query_result in self.query_states:
@@ -543,6 +566,7 @@ Metavars:
                     _all_report.append(_data)
                     print(self.rule.report(query_result))
         return _all_report
+
     def preload_meta(self, metaRules):
         print(metaRules)
         new_data = { bytes(key, 'utf8'): bytes(val, 'utf8') for key, val in metaRules.items() }
@@ -565,7 +589,7 @@ sq.load_query_yaml_file('query.yaml')
 #     b'$VISIBILITY': b'^((?!public).)*$'
 # })
 sq.query()
-sq.report()
+print(sq.report())
 
 
 # sq.format_query()
