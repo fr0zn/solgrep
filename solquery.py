@@ -80,8 +80,6 @@ class TreeRoot():
         self._sexp = ''
         self.rules = []
 
-        # self.metavars = {}
-
         self._prepare_traverse()
 
     def get_sexp(self, filters=[]):
@@ -112,12 +110,7 @@ class TreeRoot():
 
         if self.root == None:
             self.root = node
-        # if node.type == 'identifier':
-        #     _identifier = node.content
-        #     if _identifier.startswith('$'):
-        #         node.is_meta = True
-        #         if _identifier not in self.metavars:
-        #             self.metavars[_identifier] = None #MetaVar(node)
+
         return node
 
     def _prepare_traverse(self):
@@ -134,6 +127,9 @@ class TreeRoot():
     def dot(self):
         UniqueDotExporter(self.root).to_picture("TreeRoot.png")
 
+    def __repr__(self) -> str:
+        return "{} ...".format(self.root.content[:10])
+
     # def __repr__(self) -> str:
     #     return self.__str__()
 
@@ -147,12 +143,21 @@ class TreeRoot():
 
 
 class QueryStates():
+    query_state_id = 0
     def __init__(self):
         self.meta_vars = {}
         self.is_match = False
         self._matched_nodes = []
         self._is_skip = False
         self._added_meta = []
+        self.id = QueryStates.query_state_id
+        QueryStates.query_state_id += 1
+    
+    def __eq__(self, other):
+        return self.id == other.id
+    
+    def get_root(self):
+        return self._matched_nodes[0].parent
 
     def get_range(self):
         if len(self._matched_nodes) > 0:
@@ -161,8 +166,15 @@ class QueryStates():
             return (0, -1)
 
     def __repr__(self) -> str:
-        return '{} - {}'.format(self.is_match, self.meta_vars)
+        return '{} - {} - {}'.format(self.id, self.is_match, self.meta_vars)
 
+
+class QueryRule():
+    def __init__self(self, id, message, patterns, severity):
+        self.id = id
+        self.message = message
+        self.patterns = patterns
+        self.severity = severity
 class SolidityQuery():
 
     def __init__(self):
@@ -177,6 +189,8 @@ class SolidityQuery():
 
         # list of QueryStates()
         self.query_states = []
+
+        self.metaRules = {}
 
     def _build_load_library(self):
         Language.build_library('build/solidity.so',[ '.' ])
@@ -198,8 +212,10 @@ class SolidityQuery():
     def load_query_string(self, string):
         _content = bytes(string.strip(), 'utf8')
         _tree = self.parser.parse(_content)
-        self.queries = TreeRoot(_content, _tree.root_node)
-        return self.queries
+        query = TreeRoot(_content, _tree.root_node)
+        return query
+        # self.queries = TreeRoot(_content, _tree.root_node)
+        # return self.queries
 
     def load_source_file(self, fileName):
         _content, _tree = self._parse_file(fileName)
@@ -208,20 +224,15 @@ class SolidityQuery():
         return self.src
 
     def load_query_yaml(self, fileName):
-        with open(fileName, "r") as stream:
+        with open(fileName, "r", encoding='utf-8') as stream:
             try:
                 _data = yaml.safe_load(stream)
-                # TODO: Validate yaml
-                self.rules = _data['rules']
-                # TODO: Multiple rules
-                # TODO: Check for pattern-not/or etc etc
-                _content = self.rules[0]['pattern']
-                _tree = self.parser.parse(bytes(_content, 'utf8'))
-                self.queries = TreeRoot(_content, _tree.root_node)
+                self._parse_query_yaml(_data)
             except yaml.YAMLError as exc:
                 print(exc)
+                raise ValueError('Invalid YAML')
         # TODO: Checks MISSING ERROR
-        return self.queries
+        # return self.queries
 
 
     def load_query_file(self, fileName):
@@ -229,6 +240,35 @@ class SolidityQuery():
         # TODO: Checks MISSING ERROR
         self.queries = TreeRoot(_content, _tree.root_node)
         return self.queries
+    
+    def _parse_query_yaml(self, _data):
+        print(_data)
+        for req in ['message', 'id', 'severity']:
+            if req not in _data:
+                raise ValueError('Missing {} on the query file'.format(req))
+        patterns = []
+        # Single pattern
+        if 'pattern' in _data:
+            _query = self.load_query_string(_data['pattern'])
+            patterns.append(('pattern',_query))
+        elif 'patterns' in _data:
+            _patterns = [list(p.items())[0] for p in _data['patterns']] 
+            for i,type_pattern in enumerate(_patterns):
+                _type, _pattern = type_pattern 
+                if i == 0 and _type != 'pattern':
+                    raise ValueError('Patterns should start with "pattern" query')
+                _query = self.load_query_string(_pattern)
+                patterns.append((_type, _query))
+        print(patterns)
+
+        if 'metavars-regex' in _data:
+            self.preload_meta(_data['metavars-regex'])
+
+        self.queries = patterns
+
+        # import sys
+        # sys.exit()
+
 
     def _is_skip(self):
         return self.current_state._is_skip
@@ -245,13 +285,19 @@ class SolidityQuery():
     def _add_meta_compare(self, _metavar, _content):
         # _metavar = searchNode.content
         # _content = compareNode.content
+        # This means there is a preloaded rule
+        
         if _metavar not in self.current_state.meta_vars:
             self.current_state._added_meta.append(_metavar)
             self.current_state.meta_vars[_metavar] = _content
+            if _metavar in self.metaRules:
+                return bool(re.search(self.metaRules[_metavar], _content))
             return True
         else:
             # The node is equal if the metavar is the same
-            return self.current_state.meta_vars[_metavar] == _content
+            return bool(re.search(self.current_state.meta_vars[_metavar], _content))
+            # TODO: Check if okay
+            # If the metavar is preloaded, store the content to it if match
 
 
     ######################################
@@ -271,23 +317,23 @@ class SolidityQuery():
 
     def _compare_strings(self, searchNode, compareNode, args):
         # Removes ' and "
-        _merged_compare = ''.join([c.content[1:-1].decode('utf8') for c in compareNode.children if c.type != 'comment'])
         _merged_search = ''.join([c.content[1:-1].decode('utf8') for c in searchNode.children if c.type != 'comment'])
+        _merged_compare = ''.join([c.content[1:-1].decode('utf8') for c in compareNode.children if c.type != 'comment'])
         self.current_state._is_skip = True
         if _merged_search.startswith('$STRING'):
            return self._add_meta_compare(
                 _merged_search,
-                _merged_compare
-            )
+                _merged_compare 
+            ) 
         return bool(re.search(_merged_search, _merged_compare))
 
 
     def _compare_default(self, searchNode, compareNode, args):
         if searchNode.type == compareNode.type:
-            print('TRUE', searchNode.type, compareNode.type)
+            # print('TRUE', searchNode.type, compareNode.type)
             return True
         else:
-            print('DIFF', searchNode.type, compareNode.type)
+            # print('DIFF', searchNode.type, compareNode.type)
             return False
 
     # Search node -> Compare Node -> (handler, data)
@@ -301,7 +347,7 @@ class SolidityQuery():
             ('identifier', 'identifier')                          : (self._compare_identifier, {'starts':b'$'}),
             ('identifier', 'number_literal')                      : (self._compare_identifier, {'starts':b'$'}),
             ('primitive_type', 'primitive_type')                  : (self._compare_identifier, {'starts':b'$TYPE', 'skip':True}),
-            ('visibility', 'visibility')                          : (self._compare_identifier, {'starts':b'$VISIBILITY'}),
+            ('visibility', 'visibility')                          : (self._compare_identifier, {'starts':b'$VISIBILITY', 'skip':True}),
             ('state_mutability', 'state_mutability')              : (self._compare_identifier, {'starts':b'$STATE'}),
             ('storage_location', 'storage_location')              : (self._compare_identifier, {'starts':b'$STORAGE'}),
             ('pragma_versions', 'pragma_versions')                : (self._compare_identifier, {'starts':b'$VERSION', 'skip':True}),
@@ -317,7 +363,8 @@ class SolidityQuery():
 
         return _fnc(searchNode, compareNode, _data)
 
-    def _do_query(self):
+    def _do_query(self, query, srcRoot, _type='pattern', _data=None):
+        # this_query_states = []
         # ellipsis_node = TreeNode('ellipsis', None, '...')
         # commaNode = TreeNode(',', None, ',')
         # We are getting the firs rule of the query as an start point
@@ -325,16 +372,16 @@ class SolidityQuery():
         # during query load will do the rest
         query_first_rule = None
         # Skip until the find the first rule of the query that is not an ellipsis
-        for child in self.queries.root.children:
+        for child in query.root.children:
             if not child.is_ellipsis:
             # if not self._compareNodes(child, ellipsis_node):
                 query_first_rule = child
                 break
 
         _single_statement = False
-        for src_node in PreOrderIter(self.src.root):
+        for src_node in PreOrderIter(srcRoot):
             self.current_state = QueryStates()
-            print('============= CHECKING NODES ================')
+            # print('============= CHECKING NODES ================')
             # print(src_node)
             # print(query_first_rule)
             # print('===========')
@@ -345,11 +392,11 @@ class SolidityQuery():
                 # the first found rule and allows ellipis skipping
                 if _single_statement:
                     _src_parent = src_node
-                    _query_parent = self.queries.root.children[0]
+                    _query_parent = query.root.children[0]
                     _srcIndexStart = 0
                 else:
                     _src_parent = src_node.parent
-                    _query_parent = self.queries.root
+                    _query_parent = query.root
                     _srcIndexStart = _src_parent.children.index(src_node)
                 print('=========== SRC TREE ============')
                 print(str(RenderTree(_src_parent)))
@@ -357,9 +404,9 @@ class SolidityQuery():
                 print(src_node.content)
                 print()
                 print('=========== QUERY TREE ============')
-                print(self.queries)
+                print(query)
                 print('=========== QUERY CONTENT ============')
-                print(self.queries.root.content)
+                print(query.root.content)
                 # We are queriying using the full queries root content
                 # We use the parent of the found src node for the first query
                 # rule but skipped n times, where n is the index of the found
@@ -375,16 +422,60 @@ class SolidityQuery():
                         # data=self.query_data[self.query_index]
                         # metaVars=self.query_metavars[self.query_index],
                         )
-                self.current_state.is_match = _match
-                self.query_states.append(self.current_state)
+                # self.current_state.is_match = _match
+                # self.query_states.append(self.current_state)
+                if _type == 'pattern':
+                    if _match:
+                        self.current_state.is_match = _match
+                        # this_query_states.append(self.current_state)
+                        self.query_states.append(self.current_state)
+                elif _type == 'pattern-not':
+                    # print('BEFOREEEE', self.query_states)
+                    _parent_state = _data['state']
+                    if _match:
+                        _parent_state.is_match = False
+                        # self.query_states.remove(_parent_state)
+                        break
+                    # print('AFTEREERRR', self.query_states)
 
                 print('=========== MATCH ============')
                 print(_match)
-                print(self.query_states)
+                # print(this_query_states)
                 print('==============================')
                 # break
 
         print()
+                # print(_start, _end)
+                # print('-------------')
+                # print(self.src.root.content[_start:_end])
+                # print('-------------')
+                # print(query_result.meta_vars)
+
+        # print([x.is_match for x in self.query_states])
+        # print([x._matched_nodes for x in self.query_states])
+        print('=============')
+        # return this_query_states
+        # return self.query_states
+
+    def query(self):
+        _src_root = self.src.root
+        for i,(query_type,query) in enumerate(self.queries):
+            # We always start with a pattern type
+            if i == 0:
+                self._do_query(query, _src_root, query_type)
+                assert query_type == 'pattern'
+                # print(_query_states)
+            elif query_type == 'pattern-not':
+                for state in self.query_states:
+                    if state.is_match:
+                        self._do_query(query, state.get_root(), query_type, {'state':state})
+                    else:
+                        raise RuntimeError('That should not happen')
+
+        # print(sexp_format(query_sexp))
+        # captures = query.captures(self.src_treecontent.root)
+        # self._parse_captures_with_meta(captures)
+        # return captures
         print('================= RESULTS ==================')
         for query_result in self.query_states:
             if query_result.is_match:
@@ -396,30 +487,16 @@ Content {} - {}:
 
 Metavars:
 {}'''.format(_start, _end, self.src.root.content[_start:_end].decode('utf8'), query_result.meta_vars))
-                # print(_start, _end)
-                # print('-------------')
-                # print(self.src.root.content[_start:_end])
-                # print('-------------')
-                # print(query_result.meta_vars)
-
-        # print([x.is_match for x in self.query_states])
-        # print([x._matched_nodes for x in self.query_states])
-        print('=============')
-        return self.query_states
-
-    def query(self):
-        # for i,query in enumerate(self.queries):
-        return self._do_query()
-
-        print(sexp_format(query_sexp))
-        captures = query.captures(self.src_treecontent.root)
-        self._parse_captures_with_meta(captures)
-        return captures
+    
+    def preload_meta(self, metaRules):
+        print(metaRules)
+        new_data = { bytes(key, 'utf8'): bytes(val, 'utf8') for key, val in metaRules.items() }
+        self.metaRules = new_data 
 
 sq = SolidityQuery()
-t = sq.load_source_file('test.sol')
-# qs = sq.load_query_yaml('query.yaml')
-qs = sq.load_query_file('query.sol')
+sq.load_source_file('test.sol')
+sq.load_query_yaml('query.yaml')
+# qs = sq.load_query_file('query.sol')
 
 # t.dot()
 
@@ -429,6 +506,9 @@ qs = sq.load_query_file('query.sol')
 #     print(q.get_sexp())
 #     print(q.metavars)
 
+# sq.preload_meta({
+#     b'$VISIBILITY': b'^((?!public).)*$'
+# })
 print(sq.query())
 
 

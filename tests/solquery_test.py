@@ -54,7 +54,7 @@ string memory $A = '$STRING_5';
             {b'$A': b'a', '$STRING_5': 'asdfmore'},
         ],
         # Match from/to
-        [ (21,77), ]
+        [ (21,75), ]
 
     ),
     (
