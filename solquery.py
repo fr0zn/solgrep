@@ -174,6 +174,8 @@ class QueryRule():
         return self.message.render(metavars)
     
     def report(self, matched_queries):
+        if len(matched_queries) == 0:
+            return {}
         _metavars = {}
         _bytesranges = []
         _linesranges = []
