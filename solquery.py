@@ -2,6 +2,7 @@ from solquery_compare import compare_levels
 from tree_sitter import Language, Parser
 from anytree import RenderTree, NodeMixin,PreOrderIter,LevelOrderGroupIter
 from anytree.exporter import DotExporter,UniqueDotExporter
+import json
 import yaml
 import re
 
@@ -141,6 +142,40 @@ class TreeRoot():
 #     def __repr__(self):
 #         return "{}({})".format(self.node.content, self.value)
 
+def decode_convert(data):
+    if isinstance(data, bytes):  return data.decode('ascii')
+    if isinstance(data, dict):   return dict(map(decode_convert, data.items()))
+    if isinstance(data, tuple):  return map(decode_convert, data)
+    return data
+
+class SafeDict(dict):
+    def __missing__(self, key):
+        return '{' + key + '}'
+class QueryRule():
+    def __init__(self, id, message, risk, impact):
+        self.id = id
+        self.message = message
+        self.risk = risk
+        self.impact = impact
+    
+    def _format_message_meta(self, metavars):
+        # new_data = { key.decode(): val.decode() for key, val in metavars.items() }
+        return self.message.format_map(SafeDict(metavars))
+    
+    def report(self, query_result):
+        _metavars = decode_convert(query_result.meta_vars)
+        _data = {
+            'id': self.id,
+            'message': self._format_message_meta(_metavars),
+            'risk': self.risk,
+            'impact': self.impact,
+            'metavars': _metavars,
+            'bytesrange': query_result.get_bytes_range(),
+            'linesrange': query_result.get_range() 
+        }
+        return _data 
+        # return json.dumps(_data)
+
 
 class QueryStates():
     query_state_id = 0
@@ -161,7 +196,19 @@ class QueryStates():
 
     def get_range(self):
         if len(self._matched_nodes) > 0:
-            return (self._matched_nodes[0].node.start_byte, self._matched_nodes[-1].node.end_byte)
+            return (
+                self._matched_nodes[0].node.start_point, 
+                self._matched_nodes[-1].node.end_point,
+                )
+        else:
+            return (0, -1)
+
+    def get_bytes_range(self):
+        if len(self._matched_nodes) > 0:
+            return (
+                self._matched_nodes[0].node.start_byte, 
+                self._matched_nodes[-1].node.end_byte,
+                )
         else:
             return (0, -1)
 
@@ -169,12 +216,6 @@ class QueryStates():
         return '{} - {} - {}'.format(self.id, self.is_match, self.meta_vars)
 
 
-class QueryRule():
-    def __init__self(self, id, message, patterns, severity):
-        self.id = id
-        self.message = message
-        self.patterns = patterns
-        self.severity = severity
 class SolidityQuery():
 
     def __init__(self):
@@ -191,6 +232,8 @@ class SolidityQuery():
         self.query_states = []
 
         self.metaRules = {}
+
+        self.rule = None
 
     def _build_load_library(self):
         Language.build_library('build/solidity.so',[ '.' ])
@@ -222,12 +265,15 @@ class SolidityQuery():
         # TODO: Checks MISSING ERROR
         self.src = TreeRoot(_content, _tree.root_node)
         return self.src
+    
+    def load_query_yaml_string(self, data):
+        _data = yaml.safe_load(data)
+        self._parse_query_yaml(_data)
 
-    def load_query_yaml(self, fileName):
+    def load_query_yaml_file(self, fileName):
         with open(fileName, "r", encoding='utf-8') as stream:
             try:
-                _data = yaml.safe_load(stream)
-                self._parse_query_yaml(_data)
+                self.load_query_yaml_string(stream)
             except yaml.YAMLError as exc:
                 print(exc)
                 raise ValueError('Invalid YAML')
@@ -243,10 +289,11 @@ class SolidityQuery():
     
     def _parse_query_yaml(self, _data):
         print(_data)
-        for req in ['message', 'id', 'severity']:
+        for req in ['message', 'id', 'risk', 'impact']:
             if req not in _data:
                 raise ValueError('Missing {} on the query file'.format(req))
         patterns = []
+        self.rule = QueryRule(_data['id'], _data['message'], _data['risk'], _data['impact'])
         # Single pattern
         if 'pattern' in _data:
             _query = self.load_query_string(_data['pattern'])
@@ -476,10 +523,14 @@ class SolidityQuery():
         # captures = query.captures(self.src_treecontent.root)
         # self._parse_captures_with_meta(captures)
         # return captures
+
+    def report(self):
+        _all_report = []
+        # Parsed a yaml rule
         print('================= RESULTS ==================')
         for query_result in self.query_states:
             if query_result.is_match:
-                _start, _end = query_result.get_range()
+                _start, _end = query_result.get_bytes_range()
                 print('''============================
 Content {} - {}:
 
@@ -487,7 +538,11 @@ Content {} - {}:
 
 Metavars:
 {}'''.format(_start, _end, self.src.root.content[_start:_end].decode('utf8'), query_result.meta_vars))
-    
+                if self.rule:
+                    _data = self.rule.report(query_result)
+                    _all_report.append(_data)
+                    print(self.rule.report(query_result))
+        return _all_report
     def preload_meta(self, metaRules):
         print(metaRules)
         new_data = { bytes(key, 'utf8'): bytes(val, 'utf8') for key, val in metaRules.items() }
@@ -495,7 +550,7 @@ Metavars:
 
 sq = SolidityQuery()
 sq.load_source_file('test.sol')
-sq.load_query_yaml('query.yaml')
+sq.load_query_yaml_file('query.yaml')
 # qs = sq.load_query_file('query.sol')
 
 # t.dot()
@@ -509,7 +564,8 @@ sq.load_query_yaml('query.yaml')
 # sq.preload_meta({
 #     b'$VISIBILITY': b'^((?!public).)*$'
 # })
-print(sq.query())
+sq.query()
+sq.report()
 
 
 # sq.format_query()
