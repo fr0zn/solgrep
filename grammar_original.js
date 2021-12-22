@@ -274,7 +274,7 @@ module.exports = grammar({
         _statement: $ => choice(
             $.block_statement,
             $.unchecked_block,
-            $.expression_statement,
+            $._expression_statement,
             $.variable_declaration_statement,
             $.if_statement,
             $.for_statement,
@@ -490,7 +490,7 @@ module.exports = grammar({
             )
         )),
 
-        expression_statement: $ => seq($._expression, $._semicolon),
+        _expression_statement: $ => seq($._expression, $._semicolon),
 
         if_statement: $ => prec.left(seq(
             'if', '(',$._expression, ')', $._statement, optional(seq('else', $._statement)),
@@ -498,8 +498,8 @@ module.exports = grammar({
 
         for_statement: $ => seq(
             'for', '(',
-            choice($.variable_declaration_statement, $.expression_statement, $._semicolon),
-            choice($.expression_statement, $._semicolon),
+            choice($.variable_declaration_statement, $._expression_statement, $._semicolon),
+            choice($._expression_statement, $._semicolon),
             optional($._expression),
             ')', $._statement,
         ),
@@ -821,8 +821,10 @@ module.exports = grammar({
         ),
         parenthesized_expression: $ => prec(2, seq('(', $._expression, ')')),
 
+        _assignament_expression_left: $ => choice($.parenthesized_expression, $._lhs_expression),
+
         assignment_expression: $ => prec.right(PREC.ASSIGN, seq(
-            field('left', choice($.parenthesized_expression, $._lhs_expression)),
+            field('left', $._assignament_expression_left),
             '=',
             field('right', $._expression)
         )),

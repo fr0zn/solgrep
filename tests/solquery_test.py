@@ -1,5 +1,6 @@
 from solquery import *
 import pytest
+import json
 
 testdata = [
     (
@@ -7,7 +8,7 @@ testdata = [
 pragma solidity 0.7.0;
 ''',
 '''
-id: solidity-test 
+id: solidity-test
 message: >
   This is the message for testing
 risk: 1
@@ -16,25 +17,25 @@ patterns:
   - pattern: pragma solidity 0.7.0
 ''',
         # Report
-        {'id': 'solidity-test', 'message': 'This is the message for testing', 'risk': 1, 'impact': 1, 'metavars': {}, 'bytesrange': [(0, 22)], 'linesrange': [((0, 0), (0, 22))]},
+        {'id': 'solidity-test', 'message': 'This is the message for testing', 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {}, 'bytesrange': [(0, 22)], 'linesrange': [((0, 0), (0, 22))]}
     ),
     (
 '''
 pragma solidity >0.7.0 <=0.8.0;
 ''',
 '''
-id: solidity-test 
+id: solidity-test
 message: >
   This is the message for testing {{VERSION}}
 risk: 1
 impact: 1
 patterns:
-  - pattern: pragma solidity $VERSION; 
+  - pattern: pragma solidity $VERSION;
 metavars-regex:
   $VERSION: .*(=|>|<|^).*
 ''',
         # Report
-        {'id': 'solidity-test', 'message': "This is the message for testing ['>0.7.0 <=0.8.0']", 'risk': 1, 'impact': 1, 'metavars': {'VERSION': ['>0.7.0 <=0.8.0']}, 'bytesrange': [(0, 31)], 'linesrange': [((0, 0), (0, 31))]} 
+        {'id': 'solidity-test', 'message': "This is the message for testing ['>0.7.0 <=0.8.0']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {'VERSION': ['>0.7.0 <=0.8.0']}, 'bytesrange': [(0, 31)], 'linesrange': [((0, 0), (0, 31))]}
 
     ),
     (
@@ -46,18 +47,18 @@ function NAME(){
 }
 ''',
 '''
-id: solidity-test 
+id: solidity-test
 message: |
   This is the message for testing {{STRING5}}
 risk: 1
 impact: 1
 patterns:
-  - pattern: string memory $A = '$STRING5'; 
+  - pattern: string memory $A = '$STRING5';
 metavars-regex:
   $STRING5: a.*
 ''',
         # Report
-        {'id': 'solidity-test', 'message': "This is the message for testing ['asdfmore']", 'risk': 1, 'impact': 1, 'metavars': {'A': ['a'], 'STRING5': ['asdfmore']}, 'bytesrange': [(21, 75)], 'linesrange': [((1, 4), (3, 11))]} 
+        {'id': 'solidity-test', 'message': "This is the message for testing ['asdfmore']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {'A': ['a'], 'STRING5': ['asdfmore']}, 'bytesrange': [(21, 75)], 'linesrange': [((1, 4), (3, 11))]}
 
     ),
     (
@@ -66,19 +67,19 @@ function setVars(address _contract, uint256 num) public payable {
 }
 ''',
 '''
-id: solidity-test 
+id: solidity-test
 message: |
   This is the message for testing {{NAME}} {{C}}, {{NUM}}
 risk: 1
 impact: 1
 patterns:
-  - pattern: | 
+  - pattern: |
       function $NAME(..., address $C, ..., uint256 $NUM, ...) ... {
       ...
       }
 ''',
         # Report
-        {'id': 'solidity-test', 'message': "This is the message for testing ['setVars'] ['_contract'], ['num']", 'risk': 1, 'impact': 1, 'metavars': {'NAME': ['setVars'], 'C': ['_contract'], 'NUM': ['num']}, 'bytesrange': [(0, 67)], 'linesrange': [((0, 0), (1, 1))]} 
+        {'id': 'solidity-test', 'message': "This is the message for testing ['setVars'] ['_contract'], ['num']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {'NAME': ['setVars'], 'C': ['_contract'], 'NUM': ['num']}, 'bytesrange': [(0, 67)], 'linesrange': [((0, 0), (1, 1))]}
 
     ),
     (
@@ -98,13 +99,13 @@ contract Test {
 }
 ''',
 '''
-id: solidity-test 
+id: solidity-test
 message: |
   This is the message for testing {{NAME}} {{FNC}} {{TYPE}} {{NUM}}
 risk: 1
 impact: 1
 patterns:
-  - pattern: | 
+  - pattern: |
       contract $NAME {
       ...
       $TYPE $VISIBILITY $Y;
@@ -119,28 +120,28 @@ patterns:
       }
 ''',
         # Report
-        {'id': 'solidity-test', 'message': "This is the message for testing ['Test'] ['one'] ['uint'] ", 'risk': 1, 'impact': 1, 'metavars': {'NAME': ['Test'], 'TYPE': ['uint'], 'VISIBILITY': ['public'], 'FNC': ['one']}, 'bytesrange': [(0, 173)], 'linesrange': [((0, 0), (12, 1))]} 
+        {'id': 'solidity-test', 'message': "This is the message for testing ['Test'] ['one'] ['uint'] ['10']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {'NAME': ['Test'], 'TYPE': ['uint'], 'VISIBILITY': ['public'], 'Y': ['y'], 'FNC': ['one'], 'STATE': ['view'], 'NUM': ['10'], 'VAR': ['a']}, 'bytesrange': [(0, 173)], 'linesrange': [((0, 0), (12, 1))]}
 
     ),
     (
 '''
 contract Test {
     function name() {
-        
+
     }
 
     function name() public {
-        
+
     }
 
     function name() external {
-        
+
     }
 
 }
 ''',
 '''
-id: solidity-test 
+id: solidity-test
 message: |
   This is the message for testing{{ NAME | pluralize}}: {{ NAME | join(', ')}}
   List:
@@ -148,19 +149,19 @@ message: |
 risk: 1
 impact: 1
 patterns:
-  - pattern: | 
+  - pattern: |
       function $NAME(...) ... {
         ...
       }
   - pattern-not: |
       function $NAME(...) $VISIBILITY {
         ...
-      } 
+      }
 metavars-regex:
   $VISIBILITY: .*
 ''',
         # Report
-        {'id': 'solidity-test', 'message': 'This is the message for testing: name\nList:\n- name', 'risk': 1, 'impact': 1, 'metavars': {'NAME': ['name']}, 'bytesrange': [(20, 52)], 'linesrange': [((1, 4), (3, 5))]} 
+        {'id': 'solidity-test', 'message': 'This is the message for testing: name\nList:\n- name', 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {'NAME': ['name']}, 'bytesrange': [(20, 44)], 'linesrange': [((1, 4), (3, 5))]}
 
     ),
 ]
@@ -179,4 +180,19 @@ def test_solquery(solquery, src, query, report):
     solquery.load_query_yaml_string(query)
     solquery.query()
     result = solquery.report()
-    assert result == report 
+    assert result == report
+
+
+# @pytest.mark.parametrize("swc", range(100,101))
+# def test_solquery(solquery, swc):
+#     report = open('SWC/swc-{}.report'.format(swc)).read()
+
+
+#     solquery.load_source_file('SWC/swc-{}.sol'.format(swc))
+#     solquery.load_query_yaml_file('SWC/swc-{}.yaml'.format(swc))
+
+#     solquery.query()
+
+#     result = solquery.report()
+#     report = eval(report)
+#     assert result == report

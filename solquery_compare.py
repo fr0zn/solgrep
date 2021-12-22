@@ -50,8 +50,11 @@ def compare_levels(_src_root, _search_root, compareFunction, isSkipFunction, aft
 
         
         if compareFunction(_search_children[search_index], _src_children[src_index]):
+            # If skip, ignore childs for this level
             if isSkipFunction():
-                return True
+                src_index += 1
+                search_index += 1
+                continue
             _match = compare_levels(
                 _src_children[src_index], 
                 _search_children[search_index],

@@ -52,13 +52,10 @@ module.exports = grammar(standard_grammar, {
     // Entry point
     source_file: ($, previous) => {
       return choice(
-        previous,
-        $.semgrep_expression
+        $._expression,
+        previous
       );
     },
-
-     // Alternate "entry point". Allows parsing a standalone expression.
-    semgrep_expression: $ => seq('__SEMGREP_EXPRESSION', $._expression),
 
     // Allows to have:
     //  function () ... {}
@@ -143,7 +140,7 @@ module.exports = grammar(standard_grammar, {
     // expression_statement: ($, previous) => {
     //   return choice(
     //     previous,
-    //     prec.right(100, seq($.ellipsis, ';')),  // expression ellipsis
+    //     prec.right(101, seq($.ellipsis, optional(';'))),  // expression ellipsis
     //   );
     // },
 
@@ -170,6 +167,20 @@ module.exports = grammar(standard_grammar, {
          $.ellipsis,
         //  $.deep_ellipsis
        );
+     },
+
+     _assignament_expression_left: ($, previous) => {
+      return choice(
+        ...previous.members,
+        $.ellipsis,
+      ); 
+     },
+
+     _lhs_expression: ($, previous) => {
+      return choice(
+        ...previous.members,
+        prec.right(100, $.ellipsis),
+      ); 
      },
  
     //  deep_ellipsis: $ => seq(
