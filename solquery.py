@@ -215,19 +215,6 @@ class QueryRule():
                 key = key[1:]
                 _metavars[key.decode('ascii')] = _metavars.get(key.decode('ascii'),[]) + [value.decode('ascii')]
 
-            for cquery in query.children:
-                for key, value in cquery.meta_vars.items():
-                    # TODO: Assume meta with $
-                    key = key[1:]
-                    _metavars[key.decode('ascii')] = _metavars.get(key.decode('ascii'),[]) + [value.decode('ascii')]
-
-            if query.parent is not None:
-                for pquery in query.parent.children:
-                    for key, value in pquery.meta_vars.items():
-                        # TODO: Assume meta with $
-                        key = key[1:]
-                        _metavars[key.decode('ascii')] = _metavars.get(key.decode('ascii'),[]) + [value.decode('ascii')]
-
         _data = {
             'id': self.id,
             'message': self._format_message_meta(_metavars),
@@ -746,6 +733,7 @@ class SolidityQuery():
                     _traverse(current)
 
         self.root_state = QueryStates(None)
+        self.root_state.is_match = True
         _traverse(self.patterns)
 
         print(RenderTree(self.root_state))
@@ -766,19 +754,12 @@ class SolidityQuery():
 
         print(RenderTree(self.root_state))
 
-        # print(sexp_format(query_sexp))
-        # captures = query.captures(self.src_treecontent.root)
-        # self._parse_captures_with_meta(captures)
-        # return captures
-
     def report(self):
-        _all_report = []
 
-        _matched_queries = [query for query in self.root_state.children if query.is_match]
 
         # Parsed a yaml rule
         print('================= RESULTS ==================')
-        for query_result in _matched_queries:
+        for query_result in self.root_state.children:
             _start, _end = query_result.get_bytes_range()
             print('''============================
 Content {} - {}:
@@ -787,7 +768,7 @@ Content {} - {}:
 
 '''.format(_start, _end, self.src.root.content[_start:_end].decode('utf8'), query_result.meta_vars))
 
-        return self.rule.report(_matched_queries)
+        return self.rule.report(self.root_state.children)
 
     def preload_meta(self, metaRules):
         print(metaRules)
