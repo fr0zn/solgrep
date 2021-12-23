@@ -325,6 +325,46 @@ metavars-regex:
         {'id': 'solidity-test', 'message': 'This is the message', 'risk': 1, 'impact': 1, 'results': 2, 'metavars': {'CONTRACT': ['IntegerOverflowMappingSym1', 'IntegerOverflowMul']}, 'bytesrange': [(851, 1004), (1143, 1273)], 'linesrange': [((33, 0), (39, 1)), ((50, 0), (56, 1))]} 
 
     ),
+    (
+'''
+pragma solidity >0.8.0;
+
+
+contract IntegerOverflowMinimal {
+    uint public count = 1;
+
+    function run(uint256 input) public {
+        count -= input;
+    }
+}
+
+
+contract IntegerOverflowMul {
+    uint public count = 2;
+
+    function run(uint256 input) public {
+        count *= input;
+    }
+}
+''',
+'''
+id: solidity-test 
+message: |
+  This is the message
+risk: 1
+impact: 1
+patterns:
+  - pattern: contract $CONTRACT {...} 
+  - and: function run(...)  ... {...}
+    not:  ... *= ...
+# This will match all solidity  version, including <0.8.0
+metavars-regex:
+  $CONTRACT: .* 
+''',
+        # Report
+        {'id': 'solidity-test', 'message': 'This is the message', 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {'CONTRACT': ['IntegerOverflowMinimal']}, 'bytesrange': [(26, 160)], 'linesrange': [((3, 0), (9, 1))]} 
+
+    ),
 ]
 
 @pytest.fixture()
