@@ -164,6 +164,167 @@ metavars-regex:
         {'id': 'solidity-test', 'message': 'This is the message for testing: name\nList:\n- name', 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {'NAME': ['name']}, 'bytesrange': [(20, 44)], 'linesrange': [((1, 4), (3, 5))]}
 
     ),
+    (
+'''
+/*
+ * @source: https://capturetheether.com/challenges/math/token-sale/
+ * @author: Steve Marx
+ */
+
+pragma solidity ^0.4.21;
+
+contract TokenSaleChallenge {
+    mapping(address => uint256) public balanceOf;
+    uint256 constant PRICE_PER_TOKEN = 1 ether;
+
+    function TokenSaleChallenge(address _player) public payable {
+        require(msg.value == 1 ether);
+    }
+
+    function isComplete() public view returns (bool) {
+        return address(this).balance < 1 ether;
+    }
+
+    function buy(uint256 numTokens) public payable {
+        require(msg.value == numTokens * PRICE_PER_TOKEN);
+
+        balanceOf[msg.sender] += numTokens;
+    }
+
+    function sell(uint256 numTokens) public {
+        require(balanceOf[msg.sender] >= numTokens);
+
+        balanceOf[msg.sender] -= numTokens;
+        msg.sender.transfer(numTokens * PRICE_PER_TOKEN);
+    }
+}
+
+contract IntegerOverflowMappingSym1 {
+    mapping(uint256 => uint256) map;
+
+    function init(uint256 k, uint256 v) public {
+        map[k] -= v;
+    }
+}
+
+contract IntegerOverflowMinimal {
+    uint public count = 1;
+
+    function run(uint256 input) public {
+        count -= input;
+    }
+}
+
+
+contract IntegerOverflowMul {
+    uint public count = 2;
+
+    function run(uint256 input) public {
+        count *= input;
+    }
+}
+''',
+'''
+id: solidity-test 
+message: |
+  This is the message
+risk: 1
+impact: 1
+patterns:
+  - pattern: contract $CONTRACT {...} 
+  - and: 
+      - pattern: function $FUN(...)  ... {...}
+        and:
+          - pattern: $VAR[msg.sender] += ...
+# This will match all solidity  version, including <0.8.0
+metavars-regex:
+  $FUN: buy 
+''',
+        # Report
+        {'id': 'solidity-test', 'message': 'This is the message', 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {'CONTRACT': ['TokenSaleChallenge']}, 'bytesrange': [(125, 849)], 'linesrange': [((7, 0), (31, 1))]} 
+
+    ),
+    (
+'''
+/*
+ * @source: https://capturetheether.com/challenges/math/token-sale/
+ * @author: Steve Marx
+ */
+
+pragma solidity ^0.4.21;
+
+contract TokenSaleChallenge {
+    mapping(address => uint256) public balanceOf;
+    uint256 constant PRICE_PER_TOKEN = 1 ether;
+
+    function TokenSaleChallenge(address _player) public payable {
+        require(msg.value == 1 ether);
+    }
+
+    function isComplete() public view returns (bool) {
+        return address(this).balance < 1 ether;
+    }
+
+    function buy(uint256 numTokens) public payable {
+        require(msg.value == numTokens * PRICE_PER_TOKEN);
+
+        balanceOf[msg.sender] += numTokens;
+    }
+
+    function sell(uint256 numTokens) public {
+        require(balanceOf[msg.sender] >= numTokens);
+
+        balanceOf[msg.sender] -= numTokens;
+        msg.sender.transfer(numTokens * PRICE_PER_TOKEN);
+    }
+}
+
+contract IntegerOverflowMappingSym1 {
+    mapping(uint256 => uint256) map;
+
+    function init(uint256 k, uint256 v) public {
+        map[k] -= v;
+    }
+}
+
+contract IntegerOverflowMinimal {
+    uint public count = 1;
+
+    function run(uint256 input) public {
+        count -= input;
+    }
+}
+
+
+contract IntegerOverflowMul {
+    uint public count = 2;
+
+    function run(uint256 input) public {
+        count *= input;
+    }
+}
+''',
+'''
+id: solidity-test 
+message: |
+  This is the message
+risk: 1
+impact: 1
+patterns:
+  - pattern: contract $CONTRACT {...} 
+  - and: 
+      - pattern: function init(...)  ... {...}
+        and: ... -= ... 
+      - pattern: function run(...)  ... {...}
+        not: ... -= ... 
+# This will match all solidity  version, including <0.8.0
+metavars-regex:
+  $CONTRACT: .* 
+''',
+        # Report
+        {'id': 'solidity-test', 'message': 'This is the message', 'risk': 1, 'impact': 1, 'results': 2, 'metavars': {'CONTRACT': ['IntegerOverflowMappingSym1', 'IntegerOverflowMul']}, 'bytesrange': [(851, 1004), (1143, 1273)], 'linesrange': [((33, 0), (39, 1)), ((50, 0), (56, 1))]} 
+
+    ),
 ]
 
 @pytest.fixture()
