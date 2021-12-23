@@ -182,6 +182,9 @@ def decode_convert(data):
 def format_list(_list, pattern='{}', endline='\n'):
     return endline.join([pattern.format(s) for s in _list])
 
+def comma(list, pattern="{}", wrap=''):
+    return format_list(list, pattern=wrap + pattern + wrap, endline=', ')
+
 def pluralize(list, singular = '', plural = 's'):
     if len(list) > 1:
         return plural
@@ -189,7 +192,8 @@ def pluralize(list, singular = '', plural = 's'):
         return singular
 
 FILTERS['pluralize'] = pluralize
-FILTERS['format_list'] = format_list
+FILTERS['list'] = format_list
+FILTERS['comma'] = comma
 class QueryRule():
     def __init__(self, id, message, risk, impact):
         self.id = id
@@ -198,22 +202,33 @@ class QueryRule():
         self.impact = impact
 
 
-    def _format_message_meta(self, metavars):
-        return self.message.render(metavars)
+    def _format_message_meta(self, _metavars):
+        template_vars = {}
+        for r in _metavars:
+            for k, v in r.items():
+                _s_key = '{}S'.format(k)
+                if _s_key not in template_vars:
+                    template_vars[_s_key] = v.copy()
+                else:
+                    template_vars[_s_key].extend(v)
+        template_vars['RESULTS'] = _metavars
+        return self.message.render(template_vars)
 
     def report(self, matched_queries):
         if len(matched_queries) == 0:
             return {}
-        _metavars = {}
+        _metavars = []
         _bytesranges = []
         _linesranges = []
-        for query in matched_queries:
-            _bytesranges.append(query.get_bytes_range())
-            _linesranges.append(query.get_range())
-            for key, value in query.meta_vars.items():
-                # TODO: Assume meta with $
+        for match in matched_queries:
+            _bytesranges.append(match.get_bytes_range())
+            _linesranges.append(match.get_range())
+            _match_metavars = {}
+            for key, values in match.meta_vars.items():
                 key = key[1:]
-                _metavars[key.decode('ascii')] = _metavars.get(key.decode('ascii'),[]) + [value.decode('ascii')]
+                _match_metavars[key.decode('ascii')] = _match_metavars.get(key.decode('ascii'),[]) + [value.decode('ascii') for value in values]
+            _metavars.append(_match_metavars)
+
 
         _data = {
             'id': self.id,
@@ -729,7 +744,7 @@ class SolidityQuery():
             if node != node.root:
                 _old_parent = node.parent
                 node.parent = None
-                # If we remove this node and no more childs, 
+                # If we remove this node and no more childs,
                 # propagete up the parent deletion
                 if len(_old_parent.children) == 0:
                     _delete_node(_old_parent)
@@ -738,6 +753,19 @@ class SolidityQuery():
         for n in PreOrderIter(self.root_state):
             if not n.is_match:
                 _delete_node(n)
+
+        # Propagate metavars to first depth nodes
+        for r in self.root_state.children:
+            _r_meta = r.meta_vars
+            _metavars = {x:[_r_meta[x]] for x in _r_meta}
+            for n in PreOrderIter(r):
+                if n == r:
+                    continue
+                for m in n.meta_vars.keys():
+                    _metavars[m] = _metavars.get(m,[])
+                    _metavars[m].append(n.meta_vars[m])
+
+            r.meta_vars = _metavars
 
         print(RenderTree(self.root_state))
 
