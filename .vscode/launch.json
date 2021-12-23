@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Run tree-sitter test",
             "request": "launch",
             "runtimeArgs": [
@@ -24,8 +31,9 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}/node_modules/bin/tree-sitter",
-            "args": ["generate"],
+            "args": [
+                "generate"
+            ],
         },
-
     ]
 }

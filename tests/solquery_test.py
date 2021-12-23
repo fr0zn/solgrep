@@ -153,7 +153,7 @@ patterns:
       function $NAME(...) ... {
         ...
       }
-  - pattern-not: |
+  - not: |
       function $NAME(...) $VISIBILITY {
         ...
       }

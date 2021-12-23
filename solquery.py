@@ -36,6 +36,34 @@ def sexp_format(sexp):
 
     return _str
 
+class TreePattern(NodeMixin):
+    def __init__(self, type, pattern=None, parent=None, children=None):
+        super(TreePattern, self).__init__()
+        self.name = "{}-{}".format(type, pattern.__repr__())
+        self.type = type
+        self.pattern = pattern
+
+        self.states = []
+
+        self.parent = parent
+        if children:
+            self.children = children
+
+    def uppropagate(self):
+        self.parent.states = self.states
+
+    def downpropagate(self):
+        self.states = self.parent.states
+
+    def __repr__(self):
+        return self.__str__()
+
+    def sexp(self):
+        return self.type
+
+    def __str__(self):
+        return "'{}'".format(self.name)
+
 class TreeNode(NodeMixin):
     def __init__(self, type, node, content, parent=None, children=None):
         super(TreeNode, self).__init__()
@@ -169,10 +197,10 @@ class QueryRule():
         self.risk = risk
         self.impact = impact
 
-    
+
     def _format_message_meta(self, metavars):
         return self.message.render(metavars)
-    
+
     def report(self, matched_queries):
         if len(matched_queries) == 0:
             return {}
@@ -182,23 +210,23 @@ class QueryRule():
         for query in matched_queries:
             _bytesranges.append(query.get_bytes_range())
             _linesranges.append(query.get_range())
-            for key, value in query.meta_vars.items():  
+            for key, value in query.meta_vars.items():
                 # TODO: Assume meta with $
                 key = key[1:]
                 _metavars[key.decode('ascii')] = _metavars.get(key.decode('ascii'),[]) + [value.decode('ascii')]
 
             for cquery in query.child_states:
-                for key, value in cquery.meta_vars.items():  
+                for key, value in cquery.meta_vars.items():
                     # TODO: Assume meta with $
                     key = key[1:]
                     _metavars[key.decode('ascii')] = _metavars.get(key.decode('ascii'),[]) + [value.decode('ascii')]
 
             for pquery in query.parent_states:
-                for key, value in pquery.meta_vars.items():  
+                for key, value in pquery.meta_vars.items():
                     # TODO: Assume meta with $
                     key = key[1:]
                     _metavars[key.decode('ascii')] = _metavars.get(key.decode('ascii'),[]) + [value.decode('ascii')]
-        
+
         _data = {
             'id': self.id,
             'message': self._format_message_meta(_metavars),
@@ -207,9 +235,9 @@ class QueryRule():
             'results': len(matched_queries),
             'metavars': _metavars,
             'bytesrange': _bytesranges,
-            'linesrange': _linesranges 
+            'linesrange': _linesranges
         }
-        return _data 
+        return _data
         # return json.dumps(_data)
 
 
@@ -227,17 +255,17 @@ class QueryStates():
         # Used for not queries
         self.child_states = []
         QueryStates.query_state_id += 1
-    
+
     def __eq__(self, other):
         return self.id == other.id
-    
+
     def get_root(self):
         return self._matched_nodes[0].parent
 
     def get_range(self):
         if len(self._matched_nodes) > 0:
             return (
-                self._matched_nodes[0].node.start_point, 
+                self._matched_nodes[0].node.start_point,
                 self._matched_nodes[-1].node.end_point,
                 )
         else:
@@ -246,7 +274,7 @@ class QueryStates():
     def get_bytes_range(self):
         if len(self._matched_nodes) > 0:
             return (
-                self._matched_nodes[0].node.start_byte, 
+                self._matched_nodes[0].node.start_byte,
                 self._matched_nodes[-1].node.end_byte,
                 )
         else:
@@ -264,7 +292,9 @@ class SolidityQuery():
         self.parser.set_language(self.SOLIDITY_LANGUAGE)
 
         self.src = None
-        self.queries = None
+        # self.queries = None
+
+        self.patterns = None
 
         self.current_state = None
 
@@ -305,7 +335,7 @@ class SolidityQuery():
         # TODO: Checks MISSING ERROR
         self.src = TreeRoot(_content, _tree.root_node)
         return self.src
-    
+
     def load_query_yaml_string(self, data):
         _data = yaml.safe_load(data)
         self._parse_query_yaml(_data)
@@ -324,9 +354,32 @@ class SolidityQuery():
     def load_query_file(self, fileName):
         _content, _tree = self._parse_file(fileName)
         # TODO: Checks MISSING ERROR
-        self.queries = [('pattern', TreeRoot(_content, _tree.root_node))]
-        return self.queries
-    
+        root = TreePattern(type="patterns")
+        TreePattern(type='pattern', parent=root, pattern=TreeRoot(_content, _tree.root_node))
+        self.patterns = root
+        return self.patterns
+
+    def _parse_query_yaml_patterns(self, root, data):
+        if isinstance(data, list):
+            for level in data:
+                self._parse_query_yaml_patterns(root, level)
+        elif isinstance(data, dict):
+            _root = root
+            for i,(k,v) in enumerate(data.items()):
+                if k == 'pattern' and i != 0:
+                    raise ValueError('Pattern type must be the first item')
+                # if k in 'pattern':
+                #     _root = TreePattern(type=k, parent=_root, pattern=self.load_query_string(v))
+                # else:
+                if isinstance(v, list):
+                    _root = TreePattern(type='{}-either'.format(k), parent=_root, pattern=None)
+                else:
+                    # if optional['ineither']:
+                    #     TreePattern(type='{}-either'.format(k), parent=_root, pattern=self.load_query_string(v))
+                    # else:
+                    _root = TreePattern(type=k, parent=_root, pattern=self.load_query_string(v))
+                self._parse_query_yaml_patterns(_root, v)
+
     def _parse_query_yaml(self, _data):
         print(_data)
         for req in ['message', 'id', 'risk', 'impact']:
@@ -335,26 +388,29 @@ class SolidityQuery():
         patterns = []
         self.rule = QueryRule(_data['id'], _data['message'], _data['risk'], _data['impact'])
         # Single pattern
+        root = TreePattern(type="patterns")
         if 'pattern' in _data:
             _query = self.load_query_string(_data['pattern'])
-            patterns.append(('pattern',_query))
+            TreePattern(type='pattern', parent=root, pattern=self.load_query_string(_query))
+            # patterns.append(('pattern',_query))
         elif 'patterns' in _data:
-            _patterns = [list(p.items())[0] for p in _data['patterns']] 
-            for i,type_pattern in enumerate(_patterns):
-                _type, _pattern = type_pattern 
-                if i == 0 and _type != 'pattern':
-                    raise ValueError('Patterns should start with "pattern" query')
-                _query = self.load_query_string(_pattern)
-                patterns.append((_type, _query))
-        print(patterns)
+            self._parse_query_yaml_patterns(root, _data['patterns'])
+
+        self.patterns = root
+
+        #     _patterns = [list(p.items())[0] for p in _data['patterns']]
+        #     for i,type_pattern in enumerate(_patterns):
+        #         _type, _pattern = type_pattern
+        #         if i == 0 and _type != 'pattern':
+        #             raise ValueError('Patterns should start with "pattern" query')
+        #         _query = self.load_query_string(_pattern)
+        #         patterns.append((_type, _query))
+        # print(patterns)
 
         if 'metavars-regex' in _data:
             self.preload_meta(_data['metavars-regex'])
 
-        self.queries = patterns
-
-        # import sys
-        # sys.exit()
+        # self.queries = patterns
 
 
     def _is_skip(self):
@@ -419,7 +475,7 @@ class SolidityQuery():
            return self._add_meta_compare(
                 bytes(_merged_search,'utf8'),
                 bytes(_merged_compare, 'utf8')
-            ) 
+            )
         return bool(re.search(_merged_search, _merged_compare))
 
 
@@ -431,7 +487,7 @@ class SolidityQuery():
         else:
             # print('DIFF', searchNode.type, compareNode.type)
             return False
-    
+
     def _compare_expression(self, searchNode, compareNode, args):
         if searchNode.type == 'expression_statement':
             print(searchNode.children)
@@ -480,7 +536,10 @@ class SolidityQuery():
 
         return _result
 
-    def _do_query(self, query, srcRoot, _type='pattern', _data=None):
+    def _do_query(self, srcRoot, node, state, parent=None):
+        _type = node.type
+        query = node.pattern
+        # _type = node.type
         # this_query_states = []
         # ellipsis_node = TreeNode('ellipsis', None, '...')
         # commaNode = TreeNode(',', None, ',')
@@ -516,15 +575,15 @@ class SolidityQuery():
                     _src_parent = src_node.parent
                     _query_parent = query.root
                     _srcIndexStart = _src_parent.children.index(src_node)
-                print('=========== SRC TREE ============')
-                print(str(RenderTree(_src_parent)))
-                print('=========== SRC CONTENT ============')
-                print(src_node.content)
-                print()
-                print('=========== QUERY TREE ============')
-                print(query)
-                print('=========== QUERY CONTENT ============')
-                print(query.root.content)
+                # print('=========== SRC TREE ============')
+                # print(str(RenderTree(_src_parent)))
+                # print('=========== SRC CONTENT ============')
+                # print(src_node.content)
+                # print()
+                # print('=========== QUERY TREE ============')
+                # print(query)
+                # print('=========== QUERY CONTENT ============')
+                # print(query.root.content)
                 # We are queriying using the full queries root content
                 # We use the parent of the found src node for the first query
                 # rule but skipped n times, where n is the index of the found
@@ -542,30 +601,40 @@ class SolidityQuery():
                         )
                 if _match:
                     _did_any_match = True
+                    self.current_state.is_match = True
                 # self.current_state.is_match = _match
                 # self.query_states.append(self.current_state)
                 if _type == 'pattern':
+                    # inside and-either or not-either
+                    if state and parent:
+                        if parent.type == 'and-either' and _match:
+                            state.is_match = True
+                        elif parent.type == 'not-either':
+                            state.is_match = _match
                     if _match:
-                        self.current_state.is_match = True
                         # this_query_states.append(self.current_state)
                         self.query_states.append(self.current_state)
-                elif _type == 'pattern-not':
+                        # node.states.append(self.current_state)
+
+                elif _type == 'not':
                     # print('BEFOREEEE', self.query_states)
-                    _parent_state = _data['state']
                     if _match:
-                        _parent_state.is_match = False
-                        self.current_state.child_states.append(_parent_state)
+                        state.is_match = False
+                        self.query_states.append(self.current_state)
+                        self.current_state.child_states.append(state)
                         # self.query_states.remove(_parent_state)
                         break
                     # print('AFTEREERRR', self.query_states)
-                elif _type == 'pattern-and':
-                    _parent_state = _data['state']
-                    # If we found a submatch for the and, ignore the parent
-                    if _match:
-                        _parent_state.is_match = False
-                        self.current_state.is_match = True
-                        self.current_state.parent_states.append(_parent_state)
-                        self.query_states.append(self.current_state)
+                elif _type == 'and':
+                    # _parent_state = _data['state']
+                    # If we found a submatch for the and, the parent is a match
+                    state.is_match = _match
+                    # self.query_states.append(self.current_state)
+                    state.child_states.append(self.current_state)
+                    # if _match:
+                        # self.current_state.is_match = True
+                        # self.current_state.parent_states.append(_parent_state)
+                        # self.query_states.append(self.current_state)
 
                 print('=========== MATCH ============')
                 print(_match)
@@ -575,10 +644,9 @@ class SolidityQuery():
 
         # After all nodes are searched
         # If the pattern is and and no match was found, then the parent should be ignored
-        if _type == 'pattern-and':
-            _parent_state = _data['state']
+        if _type == 'and':
             if not _did_any_match:
-                _parent_state.is_match = False
+                state.is_match = False
         print()
                 # print(_start, _end)
                 # print('-------------')
@@ -593,27 +661,55 @@ class SolidityQuery():
         # return self.query_states
 
     def query(self):
-        for i,(query_type,query) in enumerate(self.queries):
-            # We always start with a pattern type
-            if i == 0:
-                assert query_type == 'pattern'
-            if query_type == 'pattern':
-                self._do_query(query, self.src.root, query_type)
-                # print(_query_states)
-            elif query_type == 'pattern-not':
-                for state_idx in range(len(self.query_states)):
-                    state = self.query_states[state_idx]
-                    if state.is_match:
-                        self._do_query(query, state.get_root(), query_type, {'state':state})
+        print(RenderTree(self.patterns))
+
+        def _traverse(parent):
+            def _process_node(current):
+                print(current)
+                _type = current.type
+                if _type == 'pattern':
+                    if current.depth == 1:
+                        self.query_states = []
+                        self._do_query(self.src.root, current, None)
+                        parent.states.extend(self.query_states)
+                        current.states = parent.states
                     else:
-                        raise RuntimeError('That should not happen')
-            elif query_type == 'pattern-and':
-                for state_idx in range(len(self.query_states)):
-                    state = self.query_states[state_idx]
-                    if state.is_match:
-                        self._do_query(query, self.src.root, query_type, {'state':state})
-                    else:
-                        raise RuntimeError('That should not happen')
+                        if parent.type not in ['and-either', 'not-either']:
+                            raise ValueError('Not implemented states for parent {}'.format(parent.type))
+                        # Filter previous either True's
+                        if parent.type == 'and-either':
+                            _remaining_states = [s for s in parent.states if not s.is_match]
+                        else:
+                            _remaining_states = parent.states
+
+                        for s in _remaining_states:
+                            self._do_query(s.get_root(), current, s, parent=parent)
+                        current.states = [s for s in _remaining_states if s.is_match]
+                elif _type == 'and':
+                    self.query_states = []
+                    for s in parent.states:
+                        self._do_query(s.get_root(), current, s)
+                    current.states = parent.states
+                elif _type == 'not':
+                    self.query_states = []
+                    for s in parent.states:
+                        self._do_query(s.get_root(), current, s)
+                    current.states = parent.states
+                elif _type == 'and-either':
+                    for s in parent.states:
+                        s.is_match = False
+                    current.states = parent.states
+
+                elif _type == 'not-either':
+                    current.states = parent.states
+
+            if len(parent.children) > 0:
+                for current in parent.children:
+                    _process_node(current)
+                    _traverse(current)
+
+        _traverse(self.patterns)
+
 
         # print(sexp_format(query_sexp))
         # captures = query.captures(self.src_treecontent.root)
@@ -622,10 +718,10 @@ class SolidityQuery():
 
     def report(self):
         _all_report = []
-        _matched_queries = [query for query in self.query_states if query.is_match]
+        _matched_queries = [query for query in self.patterns.states if query.is_match]
         # Parsed a yaml rule
         print('================= RESULTS ==================')
-        for query_result in self.query_states:
+        for query_result in self.patterns.states:
             if query_result.is_match:
                 _start, _end = query_result.get_bytes_range()
                 print('''============================
@@ -640,17 +736,19 @@ Content {} - {}:
     def preload_meta(self, metaRules):
         print(metaRules)
         new_data = { bytes(key, 'utf8'): bytes(val, 'utf8') for key, val in metaRules.items() }
-        self.metaRules = new_data 
+        self.metaRules = new_data
 
 
 if __name__ == '__main__':
     import sys
     sq = SolidityQuery()
     sq.load_source_file('test.sol')
-    if len(sys.argv) > 1:
-        sq.load_query_yaml_file('query.yaml')
-    else:
-        sq.load_query_file('query.sol')
+    # if len(sys.argv) > 1:
+    #     sq.load_query_yaml_file('query.yaml')
+    # else:
+    #     sq.load_query_file('query.sol')
+
+    sq.load_query_yaml_file('query.yaml')
 
     # t.dot()
 
@@ -669,13 +767,13 @@ if __name__ == '__main__':
 
     print(_report)
 
-    if sys.argv[1] == 'swc':
-        SWC = sys.argv[2]
-        print('SWC {} written'.format(SWC))
+    # if sys.argv[1] == 'swc':
+    #     SWC = sys.argv[2]
+    #     print('SWC {} written'.format(SWC))
 
-        src = open('test.sol').read()
-        query = open('query.yaml').read()
+    #     src = open('test.sol').read()
+    #     query = open('query.yaml').read()
 
-        open('SWC/swc-{}.report'.format(SWC),'w').write(json.dumps(_report))
-        open('SWC/swc-{}.sol'.format(SWC),'w').write(src)
-        open('SWC/swc-{}.yaml'.format(SWC), 'w').write(query)
+    #     open('SWC/swc-{}.report'.format(SWC),'w').write(json.dumps(_report))
+    #     open('SWC/swc-{}.sol'.format(SWC),'w').write(src)
+    #     open('SWC/swc-{}.yaml'.format(SWC), 'w').write(query)
