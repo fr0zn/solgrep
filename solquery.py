@@ -601,8 +601,7 @@ class SolidityQuery():
                     _did_any_match = True
                     self.current_state.is_match = True
                     self.query_states.append(self.current_state)
-                # self.current_state.is_match = _match
-                # self.query_states.append(self.current_state)
+
                 if _type == 'pattern':
                     # inside and-either or not-either
                     if state and parent:
@@ -613,29 +612,14 @@ class SolidityQuery():
                             #     del self.current_state
                         elif parent.type == 'not-either':
                             state.is_match = _match
-                    if _match:
-                        pass
-                        # this_query_states.append(self.current_state)
-                        # self.query_states.append(self.current_state)
-                        # node.states.append(self.current_state)
 
                 elif _type == 'not':
-                    # print('BEFOREEEE', self.query_states)
                     if _match:
                         state.is_match = False
-                        # self.query_states.append(self.current_state)
-                        # self.query_states.remove(_parent_state)
                         break
-                    # print('AFTEREERRR', self.query_states)
                 elif _type == 'and':
-                    # _parent_state = _data['state']
-                    # If we found a submatch for the and, the parent is a match
+                    # TODO: Not needed
                     state.is_match = _match
-                    # self.query_states.append(self.current_state)
-                    # if _match:
-                        # self.current_state.is_match = True
-                        # self.current_state.parent_states.append(_parent_state)
-                        # self.query_states.append(self.current_state)
 
                 print('=========== MATCH ============')
                 print(_match)
