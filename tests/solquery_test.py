@@ -17,7 +17,7 @@ patterns:
   - pattern: pragma solidity 0.7.0
 ''',
         # Report
-        {'id': 'solidity-test', 'message': 'This is the message for testing', 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {}, 'bytesrange': [(0, 22)], 'linesrange': [((0, 0), (0, 22))]}
+        {'id': 'solidity-test', 'message': 'This is the message for testing', 'risk': 1, 'impact': 1, 'results': 1, 'metavars': [{}], 'bytesrange': [(0, 22)], 'linesrange': [((0, 0), (0, 22))]}
     ),
     (
 '''
@@ -26,7 +26,7 @@ pragma solidity >0.7.0 <=0.8.0;
 '''
 id: solidity-test
 message: >
-  This is the message for testing {{VERSION}}
+  This is the message for testing {{VERSIONS}}
 risk: 1
 impact: 1
 patterns:
@@ -35,7 +35,7 @@ metavars-regex:
   $VERSION: .*(=|>|<|^).*
 ''',
         # Report
-        {'id': 'solidity-test', 'message': "This is the message for testing ['>0.7.0 <=0.8.0']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {'VERSION': ['>0.7.0 <=0.8.0']}, 'bytesrange': [(0, 31)], 'linesrange': [((0, 0), (0, 31))]}
+        {'id': 'solidity-test', 'message': "This is the message for testing ['>0.7.0 <=0.8.0']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': [{'VERSION': ['>0.7.0 <=0.8.0']}], 'bytesrange': [(0, 31)], 'linesrange': [((0, 0), (0, 31))]}
 
     ),
     (
@@ -49,7 +49,7 @@ function NAME(){
 '''
 id: solidity-test
 message: |
-  This is the message for testing {{STRING5}}
+  This is the message for testing {{STRING5S}} {{AS}}
 risk: 1
 impact: 1
 patterns:
@@ -58,7 +58,7 @@ metavars-regex:
   $STRING5: a.*
 ''',
         # Report
-        {'id': 'solidity-test', 'message': "This is the message for testing ['asdfmore']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {'A': ['a'], 'STRING5': ['asdfmore']}, 'bytesrange': [(21, 75)], 'linesrange': [((1, 4), (3, 11))]}
+        {'id': 'solidity-test', 'message': "This is the message for testing ['asdfmore'] ['a']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': [{'A': ['a'], 'STRING5': ['asdfmore']}], 'bytesrange': [(21, 75)], 'linesrange': [((1, 4), (3, 11))]}
 
     ),
     (
@@ -69,7 +69,7 @@ function setVars(address _contract, uint256 num) public payable {
 '''
 id: solidity-test
 message: |
-  This is the message for testing {{NAME}} {{C}}, {{NUM}}
+  This is the message for testing {{NAMES}} {{CS}} {{NUMS}}
 risk: 1
 impact: 1
 patterns:
@@ -79,7 +79,7 @@ patterns:
       }
 ''',
         # Report
-        {'id': 'solidity-test', 'message': "This is the message for testing ['setVars'] ['_contract'], ['num']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {'NAME': ['setVars'], 'C': ['_contract'], 'NUM': ['num']}, 'bytesrange': [(0, 67)], 'linesrange': [((0, 0), (1, 1))]}
+        {'id': 'solidity-test', 'message': "This is the message for testing ['setVars'] ['_contract'] ['num']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': [{'NAME': ['setVars'], 'C': ['_contract'], 'NUM': ['num']}], 'bytesrange': [(0, 67)], 'linesrange': [((0, 0), (1, 1))]}
 
     ),
     (
@@ -101,7 +101,7 @@ contract Test {
 '''
 id: solidity-test
 message: |
-  This is the message for testing {{NAME}} {{FNC}} {{TYPE}} {{NUM}}
+  This is the message for testing {{NAMES}} {{FNCS}} {{TYPES}} {{NUMS}}
 risk: 1
 impact: 1
 patterns:
@@ -120,7 +120,7 @@ patterns:
       }
 ''',
         # Report
-        {'id': 'solidity-test', 'message': "This is the message for testing ['Test'] ['one'] ['uint'] ['10']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {'NAME': ['Test'], 'TYPE': ['uint'], 'VISIBILITY': ['public'], 'Y': ['y'], 'FNC': ['one'], 'STATE': ['view'], 'NUM': ['10'], 'VAR': ['a']}, 'bytesrange': [(0, 173)], 'linesrange': [((0, 0), (12, 1))]}
+        {'id': 'solidity-test', 'message': "This is the message for testing ['Test'] ['one'] ['uint'] ['10']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': [{'NAME': ['Test'], 'TYPE': ['uint'], 'VISIBILITY': ['public'], 'Y': ['y'], 'FNC': ['one'], 'STATE': ['view'], 'NUM': ['10'], 'VAR': ['a']}], 'bytesrange': [(0, 173)], 'linesrange': [((0, 0), (12, 1))]}
 
     ),
     (
@@ -130,11 +130,15 @@ contract Test {
 
     }
 
-    function name() public {
+    function name2() {
 
     }
 
-    function name() external {
+    function name3() public {
+
+    }
+
+    function name4() external {
 
     }
 
@@ -143,9 +147,7 @@ contract Test {
 '''
 id: solidity-test
 message: |
-  This is the message for testing{{ NAME | pluralize}}: {{ NAME | join(', ')}}
-  List:
-  {{ NAME | format_list('- {}')}}
+  This is the message for testing {{ NAMES }}
 risk: 1
 impact: 1
 patterns:
@@ -161,16 +163,11 @@ metavars-regex:
   $VISIBILITY: .*
 ''',
         # Report
-        {'id': 'solidity-test', 'message': 'This is the message for testing: name\nList:\n- name', 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {'NAME': ['name']}, 'bytesrange': [(20, 44)], 'linesrange': [((1, 4), (3, 5))]}
+        {'id': 'solidity-test', 'message': "This is the message for testing ['name', 'name2']", 'risk': 1, 'impact': 1, 'results': 2, 'metavars': [{'NAME': ['name']}, {'NAME': ['name2']}], 'bytesrange': [(20, 44), (50, 75)], 'linesrange': [((1, 4), (3, 5)), ((5, 4), (7, 5))]}
 
     ),
     (
 '''
-/*
- * @source: https://capturetheether.com/challenges/math/token-sale/
- * @author: Steve Marx
- */
-
 pragma solidity ^0.4.21;
 
 contract TokenSaleChallenge {
@@ -225,32 +222,26 @@ contract IntegerOverflowMul {
 }
 ''',
 '''
-id: solidity-test 
+id: solidity-test
 message: |
-  This is the message
+  This is the message {{ CONTRACTS }} {{FUNS}} {{VARS}}
 risk: 1
 impact: 1
 patterns:
-  - pattern: contract $CONTRACT {...} 
-  - and: 
+  - pattern: contract $CONTRACT {...}
+  - and:
       - pattern: function $FUN(...)  ... {...}
         and:
           - pattern: $VAR[msg.sender] += ...
-# This will match all solidity  version, including <0.8.0
 metavars-regex:
-  $FUN: buy 
+  $FUN: buy
 ''',
         # Report
-        {'id': 'solidity-test', 'message': 'This is the message', 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {'CONTRACT': ['TokenSaleChallenge']}, 'bytesrange': [(125, 849)], 'linesrange': [((7, 0), (31, 1))]} 
+        {'id': 'solidity-test', 'message': "This is the message ['TokenSaleChallenge'] ['buy'] ['balanceOf']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': [{'CONTRACT': ['TokenSaleChallenge'], 'FUN': ['buy'], 'VAR': ['balanceOf']}], 'bytesrange': [(26, 750)], 'linesrange': [((2, 0), (26, 1))]}
 
     ),
     (
 '''
-/*
- * @source: https://capturetheether.com/challenges/math/token-sale/
- * @author: Steve Marx
- */
-
 pragma solidity ^0.4.21;
 
 contract TokenSaleChallenge {
@@ -305,24 +296,23 @@ contract IntegerOverflowMul {
 }
 ''',
 '''
-id: solidity-test 
+id: solidity-test
 message: |
-  This is the message
+  This is the message {{CONTRACTS}}
 risk: 1
 impact: 1
 patterns:
-  - pattern: contract $CONTRACT {...} 
-  - and: 
+  - pattern: contract $CONTRACT {...}
+  - and:
       - pattern: function init(...)  ... {...}
-        and: ... -= ... 
+        and: ... -= ...
       - pattern: function run(...)  ... {...}
-        not: ... -= ... 
-# This will match all solidity  version, including <0.8.0
+        not: ... -= ...
 metavars-regex:
-  $CONTRACT: .* 
+  $CONTRACT: .*
 ''',
         # Report
-        {'id': 'solidity-test', 'message': 'This is the message', 'risk': 1, 'impact': 1, 'results': 2, 'metavars': {'CONTRACT': ['IntegerOverflowMappingSym1', 'IntegerOverflowMul']}, 'bytesrange': [(851, 1004), (1143, 1273)], 'linesrange': [((33, 0), (39, 1)), ((50, 0), (56, 1))]} 
+        {'id': 'solidity-test', 'message': "This is the message ['IntegerOverflowMappingSym1', 'IntegerOverflowMul']", 'risk': 1, 'impact': 1, 'results': 2, 'metavars': [{'CONTRACT': ['IntegerOverflowMappingSym1']}, {'CONTRACT': ['IntegerOverflowMul']}], 'bytesrange': [(752, 905), (1044, 1174)], 'linesrange': [((28, 0), (34, 1)), ((45, 0), (51, 1))]}
 
     ),
     (
@@ -348,21 +338,72 @@ contract IntegerOverflowMul {
 }
 ''',
 '''
-id: solidity-test 
+id: solidity-test
 message: |
-  This is the message
+  This is the message {{CONTRACTS}}
 risk: 1
 impact: 1
 patterns:
-  - pattern: contract $CONTRACT {...} 
+  - pattern: contract $CONTRACT {...}
   - and: function run(...)  ... {...}
     not:  ... *= ...
-# This will match all solidity  version, including <0.8.0
 metavars-regex:
-  $CONTRACT: .* 
+  $CONTRACT: .*
 ''',
         # Report
-        {'id': 'solidity-test', 'message': 'This is the message', 'risk': 1, 'impact': 1, 'results': 1, 'metavars': {'CONTRACT': ['IntegerOverflowMinimal']}, 'bytesrange': [(26, 160)], 'linesrange': [((3, 0), (9, 1))]} 
+        {'id': 'solidity-test', 'message': "This is the message ['IntegerOverflowMinimal']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': [{'CONTRACT': ['IntegerOverflowMinimal']}], 'bytesrange': [(26, 160)], 'linesrange': [((3, 0), (9, 1))]}
+
+    ),
+    (
+'''
+pragma solidity >0.8.0;
+
+
+contract IntegerOverflowMinimal {
+    uint public count = 1;
+
+    function run_div(uint256 input) public {
+        count /= input;
+    }
+
+    function run(uint256 input) public {
+        count -= input;
+    }
+
+    function run_more(uint256 input) public {
+        count += input;
+    }
+}
+
+
+contract IntegerOverflowMul {
+    uint public count = 2;
+
+    function run_2(uint256 input) public {
+        count *= input;
+    }
+}
+''',
+'''
+id: solidity-test
+message: |
+  This is the message {{CONTRACTS}} {{FUNS}}
+risk: 1
+impact: 1
+patterns:
+  - pattern: contract $CONTRACT {...}
+    and:
+      - pattern: function $FUN(...)  ... {...}
+        and:
+        - pattern: ... -= ...
+        - pattern: ... *= ...
+        - pattern: ... += ...
+metavars-regex:
+  $CONTRACT: .*
+  $FUN: run_.*
+''',
+        # Report
+        {'id': 'solidity-test', 'message': "This is the message ['IntegerOverflowMinimal', 'IntegerOverflowMul'] ['run_more', 'run_2']", 'risk': 1, 'impact': 1, 'results': 2, 'metavars': [{'CONTRACT': ['IntegerOverflowMinimal'], 'FUN': ['run_more']}, {'CONTRACT': ['IntegerOverflowMul'], 'FUN': ['run_2']}], 'bytesrange': [(26, 313), (316, 448)], 'linesrange': [((3, 0), (17, 1)), ((20, 0), (26, 1))]}
 
     ),
 ]
