@@ -600,6 +600,7 @@ class SolidityQuery():
                 if _match:
                     _did_any_match = True
                     self.current_state.is_match = True
+                    self.query_states.append(self.current_state)
                 # self.current_state.is_match = _match
                 # self.query_states.append(self.current_state)
                 if _type == 'pattern':
@@ -608,21 +609,21 @@ class SolidityQuery():
                         if parent.type == 'and-either':
                             if _match:
                                 state.is_match = True
-                                self.query_states.append(self.current_state)
                             # else:
                             #     del self.current_state
                         elif parent.type == 'not-either':
                             state.is_match = _match
                     if _match:
+                        pass
                         # this_query_states.append(self.current_state)
-                        self.query_states.append(self.current_state)
+                        # self.query_states.append(self.current_state)
                         # node.states.append(self.current_state)
 
                 elif _type == 'not':
                     # print('BEFOREEEE', self.query_states)
                     if _match:
                         state.is_match = False
-                        self.query_states.append(self.current_state)
+                        # self.query_states.append(self.current_state)
                         # self.query_states.remove(_parent_state)
                         break
                     # print('AFTEREERRR', self.query_states)
@@ -706,10 +707,11 @@ class SolidityQuery():
                         # current.states.children = [s for s in _remaining_states if s.is_match]
                         # print(current.states.children)
                 elif _type == 'and':
-                    # self.query_states = []
+                    self.query_states = []
                     for s in parent.states:
                         self._do_query(s.get_root(), current_pattern, s)
                         self.slash_match(s, True)
+                    current.states = self.query_states.copy()
                     # current.states = parent.states
                     # current.states = self.query_states
                 elif _type == 'not':
@@ -717,6 +719,7 @@ class SolidityQuery():
                     for s in parent.states:
                         self._do_query(s.get_root(), current_pattern, s)
                         self.slash_match(s, True)
+                    current.states = self.query_states.copy()
                     # current.states = parent.states
                     # current.states = self.query_states
                 elif _type == 'and-either':
