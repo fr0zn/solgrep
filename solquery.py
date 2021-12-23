@@ -215,17 +215,18 @@ class QueryRule():
                 key = key[1:]
                 _metavars[key.decode('ascii')] = _metavars.get(key.decode('ascii'),[]) + [value.decode('ascii')]
 
-            for cquery in query.child_states:
+            for cquery in query.children:
                 for key, value in cquery.meta_vars.items():
                     # TODO: Assume meta with $
                     key = key[1:]
                     _metavars[key.decode('ascii')] = _metavars.get(key.decode('ascii'),[]) + [value.decode('ascii')]
 
-            for pquery in query.parent_states:
-                for key, value in pquery.meta_vars.items():
-                    # TODO: Assume meta with $
-                    key = key[1:]
-                    _metavars[key.decode('ascii')] = _metavars.get(key.decode('ascii'),[]) + [value.decode('ascii')]
+            if query.parent is not None:
+                for pquery in query.parent.children:
+                    for key, value in pquery.meta_vars.items():
+                        # TODO: Assume meta with $
+                        key = key[1:]
+                        _metavars[key.decode('ascii')] = _metavars.get(key.decode('ascii'),[]) + [value.decode('ascii')]
 
         _data = {
             'id': self.id,
@@ -241,20 +242,27 @@ class QueryRule():
         # return json.dumps(_data)
 
 
-class QueryStates():
+class QueryStates(NodeMixin):
     query_state_id = 0
-    def __init__(self):
+    def __init__(self, parent):
         self.meta_vars = {}
         self.is_match = False
         self._matched_nodes = []
         self._is_skip = False
         self._added_meta = []
+
         self.id = QueryStates.query_state_id
         # Used for and queries
-        self.parent_states = []
+        # self.parent_states = []
         # Used for not queries
-        self.child_states = []
+        # self.child_states = []
+
+        # self.child = []
+
+        self.parent = parent
+
         QueryStates.query_state_id += 1
+
 
     def __eq__(self, other):
         return self.id == other.id
@@ -281,7 +289,8 @@ class QueryStates():
             return (0, -1)
 
     def __repr__(self) -> str:
-        return '{} - {} - {}'.format(self.id, self.is_match, self.meta_vars)
+        _last = ' '.join([str(x.content.decode('utf8')) for x in self._matched_nodes])[:20] + '...'
+        return '{} - {} - {} - {}'.format(self.id, self.is_match, self.meta_vars, _last)
 
 
 class SolidityQuery():
@@ -295,6 +304,7 @@ class SolidityQuery():
         # self.queries = None
 
         self.patterns = None
+        self.root_state = None
 
         self.current_state = None
 
@@ -557,7 +567,8 @@ class SolidityQuery():
         _single_statement = False
         _did_any_match = False
         for src_node in PreOrderIter(srcRoot):
-            self.current_state = QueryStates()
+            # The new state is a child of the parent state
+            self.current_state = QueryStates(state)
             # print('============= CHECKING NODES ================')
             # print(src_node)
             # print(query_first_rule)
@@ -607,8 +618,12 @@ class SolidityQuery():
                 if _type == 'pattern':
                     # inside and-either or not-either
                     if state and parent:
-                        if parent.type == 'and-either' and _match:
-                            state.is_match = True
+                        if parent.type == 'and-either':
+                            if _match:
+                                state.is_match = True
+                                self.query_states.append(self.current_state)
+                            # else:
+                            #     del self.current_state
                         elif parent.type == 'not-either':
                             state.is_match = _match
                     if _match:
@@ -621,7 +636,6 @@ class SolidityQuery():
                     if _match:
                         state.is_match = False
                         self.query_states.append(self.current_state)
-                        self.current_state.child_states.append(state)
                         # self.query_states.remove(_parent_state)
                         break
                     # print('AFTEREERRR', self.query_states)
@@ -630,7 +644,6 @@ class SolidityQuery():
                     # If we found a submatch for the and, the parent is a match
                     state.is_match = _match
                     # self.query_states.append(self.current_state)
-                    state.child_states.append(self.current_state)
                     # if _match:
                         # self.current_state.is_match = True
                         # self.current_state.parent_states.append(_parent_state)
@@ -660,56 +673,98 @@ class SolidityQuery():
         # return this_query_states
         # return self.query_states
 
+    def slash_match(self, state_tree, is_match):
+        _childrens = []
+        for s in state_tree.children:
+            if s.is_match == is_match:
+                _childrens.append(s)
+        state_tree.children = _childrens
+
+
     def query(self):
         print(RenderTree(self.patterns))
 
         def _traverse(parent):
-            def _process_node(current):
-                print(current)
-                _type = current.type
+            def _process_node(current_pattern):
+                print(current_pattern)
+                _type = current_pattern.type
                 if _type == 'pattern':
-                    if current.depth == 1:
-                        self.query_states = []
-                        self._do_query(self.src.root, current, None)
-                        parent.states.extend(self.query_states)
-                        current.states = parent.states
+                    if current_pattern.depth == 1:
+                        self._do_query(self.src.root, current_pattern, self.root_state)
+                        # parent.states.extend(self.query_states)
+                        # current.states = parent.states
+                        # current.states = self.current_state
+                        self.slash_match(self.root_state, True)
+                        # current.states = parent.states
+                        parent.states = self.query_states.copy()
+                        current_pattern.states = self.query_states.copy()
+                        # current.states = [s for s in self.query_states if s.is_match]
                     else:
                         if parent.type not in ['and-either', 'not-either']:
                             raise ValueError('Not implemented states for parent {}'.format(parent.type))
-                        # Filter previous either True's
-                        if parent.type == 'and-either':
-                            _remaining_states = [s for s in parent.states if not s.is_match]
-                        else:
-                            _remaining_states = parent.states
 
-                        for s in _remaining_states:
-                            self._do_query(s.get_root(), current, s, parent=parent)
-                        current.states = [s for s in _remaining_states if s.is_match]
+                        _new_level_childs = []
+                        for s in parent.states:
+                            self.query_states = []
+                            _newTree = QueryStates(s)
+                            if parent.type == 'and-either':
+                                _newTree.is_match = False
+                                # s.is_match = False
+                            # _newTree.is_match = True
+                            self._do_query(s.get_root(), current_pattern, _newTree, parent=parent)
+                            self.slash_match(_newTree, True)
+                            _new_level_childs.extend(_newTree.children)
+
+                        current_pattern.states = _new_level_childs
+                        # current.states.children = [s for s in _remaining_states if s.is_match]
+                        # print(current.states.children)
                 elif _type == 'and':
-                    self.query_states = []
+                    # self.query_states = []
                     for s in parent.states:
-                        self._do_query(s.get_root(), current, s)
-                    current.states = parent.states
+                        self._do_query(s.get_root(), current_pattern, s)
+                        self.slash_match(s, True)
+                    # current.states = parent.states
+                    # current.states = self.query_states
                 elif _type == 'not':
-                    self.query_states = []
+                    # self.query_states = []
                     for s in parent.states:
-                        self._do_query(s.get_root(), current, s)
-                    current.states = parent.states
+                        self._do_query(s.get_root(), current_pattern, s)
+                        self.slash_match(s, True)
+                    # current.states = parent.states
+                    # current.states = self.query_states
                 elif _type == 'and-either':
-                    for s in parent.states:
-                        s.is_match = False
-                    current.states = parent.states
+                    # for s in parent.states.children:
+                    #     s.is_match = False
+                    current_pattern.states = parent.states
 
                 elif _type == 'not-either':
-                    current.states = parent.states
+                    current_pattern.states = parent.states
 
             if len(parent.children) > 0:
                 for current in parent.children:
                     _process_node(current)
                     _traverse(current)
 
+        self.root_state = QueryStates(None)
         _traverse(self.patterns)
 
+        print(RenderTree(self.root_state))
+
+        def _delete_node(node):
+            if node != node.root:
+                _old_parent = node.parent
+                node.parent = None
+                # If we remove this node and no more childs, 
+                # propagete up the parent deletion
+                if len(_old_parent.children) == 0:
+                    _delete_node(_old_parent)
+
+        # Filter only full true branches, if any node is False remove the entire branch
+        for n in PreOrderIter(self.root_state):
+            if not n.is_match:
+                _delete_node(n)
+
+        print(RenderTree(self.root_state))
 
         # print(sexp_format(query_sexp))
         # captures = query.captures(self.src_treecontent.root)
@@ -718,13 +773,14 @@ class SolidityQuery():
 
     def report(self):
         _all_report = []
-        _matched_queries = [query for query in self.patterns.states if query.is_match]
+
+        _matched_queries = [query for query in self.root_state.children if query.is_match]
+
         # Parsed a yaml rule
         print('================= RESULTS ==================')
-        for query_result in self.patterns.states:
-            if query_result.is_match:
-                _start, _end = query_result.get_bytes_range()
-                print('''============================
+        for query_result in _matched_queries:
+            _start, _end = query_result.get_bytes_range()
+            print('''============================
 Content {} - {}:
 
 {}
