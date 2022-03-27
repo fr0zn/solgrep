@@ -1,32 +1,16 @@
 class CompareInterface():
-    # def __init__(self):
-        # self.compare_function = _compareFunction
-        # self.is_skip_function = _isSkipFunction
-        # self.after_skip_function = _afterSkipFunction
-        # self.is_match_function = _isMatchFunction
-
-        # self.search_root = None
-        # self.src_root = None
-        # self.start_src_index = 0
 
     def compare_nodes(self, src, search):
-        raise NotImplementedError
+        return False
 
     def is_skip_node(self):
-        raise NotImplementedError
+        return False
 
     def after_skip_node(self):
-        raise NotImplementedError
+        pass
 
     def after_match_node(self, node):
-        raise NotImplementedError
-
-    # def set_src_root_index(self, _src_root, _index):
-    #     self.src_root = _src_root
-    #     self.start_src_index = _index
-
-    # def set_search_root(self, _search_root):
-    #     self.search_root = _search_root
+        pass
 
     # This function assumes that _src_root and _search_root are equal
     def compare_levels(self, src_root, search_root, src_index=0):
@@ -48,7 +32,7 @@ class CompareInterface():
         while search_index < len(_search_children):
 
             # if compareFunction(_search_children[search_index], ellipsisNode):
-            if _search_children[search_index].is_ellipsis:
+            if getattr(_search_children[search_index], 'is_ellipsis', False):
                 in_ellipsis = True
                 search_index += 1
                 continue
@@ -58,19 +42,19 @@ class CompareInterface():
             if src_index >= len(_src_children):
                 return False
 
-            if _search_children[search_index].is_comma:
+            if getattr(_search_children[search_index], 'is_comma', False):
                 search_index += 1
                 continue
 
-            if _src_children[src_index].is_comma:
+            if getattr(_src_children[src_index], 'is_comma', False):
                 src_index += 1
                 continue
 
-            if _search_children[search_index].is_comment:
+            if getattr(_search_children[search_index], 'is_comment', False):
                 search_index += 1
                 continue
 
-            if _src_children[src_index].is_comment:
+            if getattr(_src_children[src_index], 'is_comment', False):
                 src_index += 1
                 continue
 

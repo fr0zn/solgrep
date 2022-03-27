@@ -1,9 +1,24 @@
-from solquery_compare import compare_levels
-from anytree import Node, RenderTree, AsciiStyle 
+from solquery_compare import CompareInterface
+from anytree import Node, RenderTree, AsciiStyle, NodeMixin
 
-def compare_nodes(node1, node2, meta=[]):
-    return node1.name == node2.name
+class NodeE(NodeMixin):  
+    def __init__(self, name, parent=None, children=None):
+        self.name = name
+        self.parent = parent
+        # self.is_ellipsis = False
+        # self.is_comma = False
+        # self.is_comment = False
+        if children:
+            self.children = children
+        if name == '...':
+            self.is_ellipsis = True
 
+class Compare(CompareInterface):
+    def compare_nodes(self, src, search):
+        return src.name == search.name
+
+
+compare = Compare()
 
 # a
 # |-- b
@@ -18,18 +33,18 @@ def compare_nodes(node1, node2, meta=[]):
 #     |   +-- k
 #     +-- l
 
-a = Node("a")
-b = Node("b", parent=a)
-c = Node("c", parent=a)
-d = Node("d", parent=c)
-e = Node("e", parent=d)
-f = Node("f", parent=c)
-g = Node("g", parent=a)
-h = Node("h", parent=a)
-i = Node("i", parent=h)
-j = Node("j", parent=h)
-k = Node("k", parent=j)
-l = Node("l", parent=h)
+a = NodeE("a")
+b = NodeE("b", parent=a)
+c = NodeE("c", parent=a)
+d = NodeE("d", parent=c)
+e = NodeE("e", parent=d)
+f = NodeE("f", parent=c)
+g = NodeE("g", parent=a)
+h = NodeE("h", parent=a)
+i = NodeE("i", parent=h)
+j = NodeE("j", parent=h)
+k = NodeE("k", parent=j)
+l = NodeE("l", parent=h)
 
 # a
 # |-- b
@@ -39,32 +54,32 @@ l = Node("l", parent=h)
 #     |-- i
 #     |-- ...
 #     +-- l
-s_a = Node("a")
-s_b = Node("b", parent=s_a)
-s_c = Node("...", parent=s_a)
-s_g = Node("g", parent=s_a)
-s_h = Node("h", parent=s_a)
-s_i = Node("i", parent=s_h)
-s_j = Node("...", parent=s_h)
-s_l = Node("l", parent=s_h)
+s_a = NodeE("a")
+s_b = NodeE("b", parent=s_a)
+s_c = NodeE("...", parent=s_a)
+s_g = NodeE("g", parent=s_a)
+s_h = NodeE("h", parent=s_a)
+s_i = NodeE("i", parent=s_h)
+s_j = NodeE("...", parent=s_h)
+s_l = NodeE("l", parent=s_h)
 
 print(RenderTree(a, style=AsciiStyle()).by_attr())
 print(RenderTree(s_a, style=AsciiStyle()).by_attr())
 
-_match = compare_levels( a, s_a, ellipsisNode=Node('...'), compareFunction=compare_nodes)
+_match = compare.compare_levels(a, s_a)
 assert _match == True
 
 # a
 # |-- b
 # +-- c
 
-s_a = Node("a")
-s_b = Node("b", parent=s_a)
-s_n = Node("...", parent=s_a)
-s_c = Node("c", parent=s_a)
+s_a = NodeE("a")
+s_b = NodeE("b", parent=s_a)
+s_n = NodeE("...", parent=s_a)
+s_c = NodeE("c", parent=s_a)
 
 print(RenderTree(s_a, style=AsciiStyle()).by_attr())
-_match = compare_levels( a, s_a, ellipsisNode=Node('...'), compareFunction=compare_nodes)
+_match = compare.compare_levels(a, s_a)
 
 assert _match == True
 
@@ -73,15 +88,15 @@ assert _match == True
 # +-- h
 #     +-- ...
 
-s_a = Node("a")
-s_b = Node("...", parent=s_a)
-# s_c = Node("", parent=s_a)
-# s_g = Node("g", parent=s_a)
-s_h = Node("h", parent=s_a)
-s_i = Node("...", parent=s_h)
+s_a = NodeE("a")
+s_b = NodeE("...", parent=s_a)
+# s_c = NodeE("", parent=s_a)
+# s_g = NodeE("g", parent=s_a)
+s_h = NodeE("h", parent=s_a)
+s_i = NodeE("...", parent=s_h)
 
 print(RenderTree(s_a, style=AsciiStyle()).by_attr())
-_match = compare_levels( a, s_a, ellipsisNode=Node('...'), compareFunction=compare_nodes)
+_match = compare.compare_levels(a, s_a)
 
 assert _match == True
 
@@ -90,12 +105,12 @@ assert _match == True
 # |-- ...
 # +-- h
 
-s_a = Node("a")
-s_b = Node("...", parent=s_a)
-s_h = Node("h", parent=s_a)
+s_a = NodeE("a")
+s_b = NodeE("...", parent=s_a)
+s_h = NodeE("h", parent=s_a)
 
 print(RenderTree(s_a, style=AsciiStyle()).by_attr())
-_match = compare_levels( a, s_a, ellipsisNode=Node('...'), compareFunction=compare_nodes)
+_match = compare.compare_levels(a, s_a)
 
 assert _match == True
 
@@ -106,15 +121,15 @@ assert _match == True
 # |   +-- ...
 # +-- ...
 
-s_a = Node("a")
-s_b = Node("b", parent=s_a)
-s_c = Node("c", parent=s_a)
-s_n = Node("...", parent=s_c)
-s_n = Node("...", parent=s_a)
-# s_g = Node("g", parent=s_a)
+s_a = NodeE("a")
+s_b = NodeE("b", parent=s_a)
+s_c = NodeE("c", parent=s_a)
+s_n = NodeE("...", parent=s_c)
+s_n = NodeE("...", parent=s_a)
+# s_g = NodeE("g", parent=s_a)
 
 print(RenderTree(s_a, style=AsciiStyle()).by_attr())
-_match = compare_levels( a, s_a, ellipsisNode=Node('...'), compareFunction=compare_nodes)
+_match = compare.compare_levels(a, s_a)
 
 assert _match == True
 
@@ -124,15 +139,15 @@ assert _match == True
 # |   +-- ...
 # +-- ...
 
-s_a = Node("a")
-s_b = Node("...", parent=s_a)
-s_c = Node("c", parent=s_a)
-s_n = Node("...", parent=s_c)
-s_n = Node("...", parent=s_a)
-# s_g = Node("g", parent=s_a)
+s_a = NodeE("a")
+s_b = NodeE("...", parent=s_a)
+s_c = NodeE("c", parent=s_a)
+s_n = NodeE("...", parent=s_c)
+s_n = NodeE("...", parent=s_a)
+# s_g = NodeE("g", parent=s_a)
 
 print(RenderTree(s_a, style=AsciiStyle()).by_attr())
-_match = compare_levels( a, s_a, ellipsisNode=Node('...'), compareFunction=compare_nodes)
+_match = compare.compare_levels(a, s_a)
 
 assert _match == True
 
@@ -143,16 +158,16 @@ assert _match == True
 # |   +-- f
 # +-- ...
 
-s_a = Node("a")
-s_b = Node("b", parent=s_a)
-s_c = Node("c", parent=s_a)
-s_d = Node("d", parent=s_c)
-s_f = Node("f", parent=s_c)
-s_n = Node("...", parent=s_a)
-# s_g = Node("g", parent=s_a)
+s_a = NodeE("a")
+s_b = NodeE("b", parent=s_a)
+s_c = NodeE("c", parent=s_a)
+s_d = NodeE("d", parent=s_c)
+s_f = NodeE("f", parent=s_c)
+s_n = NodeE("...", parent=s_a)
+# s_g = NodeE("g", parent=s_a)
 
 print(RenderTree(s_a, style=AsciiStyle()).by_attr())
-_match = compare_levels( a, s_a, ellipsisNode=Node('...'), compareFunction=compare_nodes)
+_match = compare.compare_levels(a, s_a)
 
 assert _match == True
 
@@ -162,14 +177,14 @@ assert _match == True
 # |-- g
 # +-- h
 
-s_a = Node("a")
-s_b = Node("b", parent=s_a)
-s_c = Node("c", parent=s_a)
-s_g = Node("g", parent=s_a)
-s_n = Node("h", parent=s_a)
+s_a = NodeE("a")
+s_b = NodeE("b", parent=s_a)
+s_c = NodeE("c", parent=s_a)
+s_g = NodeE("g", parent=s_a)
+s_n = NodeE("h", parent=s_a)
 
 print(RenderTree(s_a, style=AsciiStyle()).by_attr())
-_match = compare_levels( a, s_a, ellipsisNode=Node('...'), compareFunction=compare_nodes)
+_match = compare.compare_levels(a, s_a)
 
 assert _match == True
 
@@ -183,16 +198,16 @@ assert _match == True
 # |   +-- d
 # +-- ...
 
-s_a = Node("a")
-s_b = Node("b", parent=s_a)
-s_c = Node("c", parent=s_a)
-s_f = Node("f", parent=s_c)
-s_d = Node("d", parent=s_c)
-# s_g = Node("g", parent=s_a)
-s_n = Node("...", parent=s_a)
+s_a = NodeE("a")
+s_b = NodeE("b", parent=s_a)
+s_c = NodeE("c", parent=s_a)
+s_f = NodeE("f", parent=s_c)
+s_d = NodeE("d", parent=s_c)
+# s_g = NodeE("g", parent=s_a)
+s_n = NodeE("...", parent=s_a)
 
 print(RenderTree(s_a, style=AsciiStyle()).by_attr())
-_match = compare_levels( a, s_a, ellipsisNode=Node('...'), compareFunction=compare_nodes)
+_match = compare.compare_levels(a, s_a)
 
 assert _match == False
 
@@ -202,14 +217,14 @@ assert _match == False
 # |-- c
 # +-- h
 
-s_a = Node("a")
-s_b = Node("b", parent=s_a)
-s_c = Node("c", parent=s_a)
-# s_g = Node("g", parent=s_a)
-s_n = Node("h", parent=s_a)
+s_a = NodeE("a")
+s_b = NodeE("b", parent=s_a)
+s_c = NodeE("c", parent=s_a)
+# s_g = NodeE("g", parent=s_a)
+s_n = NodeE("h", parent=s_a)
 
 print(RenderTree(s_a, style=AsciiStyle()).by_attr())
-_match = compare_levels( a, s_a, ellipsisNode=Node('...'), compareFunction=compare_nodes)
+_match = compare.compare_levels(a, s_a)
 
 assert _match == False
 
@@ -222,16 +237,16 @@ assert _match == False
 # |-- ... (exh)
 # +-- j
 
-s_a = Node("a")
-s_b = Node("b", parent=s_a)
-s_c = Node("c", parent=s_a)
-s_g = Node("g", parent=s_a)
-s_n = Node("h", parent=s_a)
-s_n = Node("...", parent=s_a)
-s_n = Node("j", parent=s_a)
+s_a = NodeE("a")
+s_b = NodeE("b", parent=s_a)
+s_c = NodeE("c", parent=s_a)
+s_g = NodeE("g", parent=s_a)
+s_n = NodeE("h", parent=s_a)
+s_n = NodeE("...", parent=s_a)
+s_n = NodeE("j", parent=s_a)
 
 print(RenderTree(s_a, style=AsciiStyle()).by_attr())
-_match = compare_levels( a, s_a, ellipsisNode=Node('...'), compareFunction=compare_nodes)
+_match = compare.compare_levels(a, s_a)
 
 assert _match == False
 
@@ -244,17 +259,17 @@ assert _match == False
 # |   +-- e (exh)
 # +-- ...
 
-s_a = Node("a")
-s_b = Node("b", parent=s_a)
-s_c = Node("c", parent=s_a)
-s_d = Node("d", parent=s_c)
-s_f = Node("f", parent=s_c)
-s_e = Node("e", parent=s_c)
-s_n = Node("...", parent=s_a)
-# s_g = Node("g", parent=s_a)
+s_a = NodeE("a")
+s_b = NodeE("b", parent=s_a)
+s_c = NodeE("c", parent=s_a)
+s_d = NodeE("d", parent=s_c)
+s_f = NodeE("f", parent=s_c)
+s_e = NodeE("e", parent=s_c)
+s_n = NodeE("...", parent=s_a)
+# s_g = NodeE("g", parent=s_a)
 
 print(RenderTree(s_a, style=AsciiStyle()).by_attr())
-_match = compare_levels( a, s_a, ellipsisNode=Node('...'), compareFunction=compare_nodes)
+_match = compare.compare_levels(a, s_a)
 
 assert _match == False
 
@@ -267,15 +282,15 @@ assert _match == False
 #     |   +-- e
 #     +-- f
 
-a = Node("a")
-c = Node("c", parent=a)
-d = Node("d", parent=c)
-# e = Node("e", parent=d)
-f = Node("f", parent=c)
-c = Node("c", parent=a)
-d = Node("d", parent=c)
-e = Node("e", parent=d)
-f = Node("f", parent=c)
+a = NodeE("a")
+c = NodeE("c", parent=a)
+d = NodeE("d", parent=c)
+# e = NodeE("e", parent=d)
+f = NodeE("f", parent=c)
+c = NodeE("c", parent=a)
+d = NodeE("d", parent=c)
+e = NodeE("e", parent=d)
+f = NodeE("f", parent=c)
 
 print(RenderTree(a, style=AsciiStyle()).by_attr())
 
@@ -289,15 +304,15 @@ print(RenderTree(a, style=AsciiStyle()).by_attr())
 # This is an special case, this should match, since we are trying to find the longest matching branch
 # The first c will be skipped since the full branch did not match, but the second will
 
-s_a = Node("a")
-s_n = Node("...", parent=s_a)
-s_c = Node("c", parent=s_a)
-s_d = Node("d", parent=s_c)
-s_f = Node("f", parent=s_c)
-s_e = Node("e", parent=s_d)
-# s_g = Node("g", parent=s_a)
+s_a = NodeE("a")
+s_n = NodeE("...", parent=s_a)
+s_c = NodeE("c", parent=s_a)
+s_d = NodeE("d", parent=s_c)
+s_f = NodeE("f", parent=s_c)
+s_e = NodeE("e", parent=s_d)
+# s_g = NodeE("g", parent=s_a)
 
 print(RenderTree(s_a, style=AsciiStyle()).by_attr())
-_match = compare_levels(a, s_a, ellipsisNode=Node('...'), compareFunction=compare_nodes)
+_match = compare.compare_levels(a, s_a)
 
 assert _match == True

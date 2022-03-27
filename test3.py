@@ -3,7 +3,7 @@ a = [1, 2, 3, 4, 5]
 b = ['.', '.', '.', '.', '.', '.', 5]
 
 
-def compare_levels(src, search):
+def compare(src, search):
     src_index = 0
     search_index = 0
     in_ellipsis = False
