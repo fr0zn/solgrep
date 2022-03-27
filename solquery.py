@@ -1,5 +1,5 @@
 from sys import meta_path
-from solquery_compare import compare_levels
+from solquery_compare import CompareInterface
 from tree_sitter import Language, Parser
 from anytree import RenderTree, NodeMixin,PreOrderIter,LevelOrderGroupIter
 from anytree.exporter import DotExporter,UniqueDotExporter
@@ -295,7 +295,7 @@ class QueryStates(NodeMixin):
         return '{} - {} - {} - {}'.format(self.id, self.is_match, self.meta_vars, _last)
 
 
-class SolidityQuery():
+class SolidityQuery(CompareInterface):
 
     def __init__(self):
         self._build_load_library()
@@ -424,16 +424,16 @@ class SolidityQuery():
 
         # self.queries = patterns
 
-
-    def _is_skip(self):
+    # CompareInterface
+    def is_skip_node(self):
         return self.current_state._is_skip
 
-    def _after_skip(self):
+    def after_skip_node(self):
         for added in self.current_state._added_meta:
             self.current_state.meta_vars.pop(added)
         self.current_state._added_meta = []
 
-    def _is_match(self, node):
+    def after_match_node(self, node):
         self.current_state._matched_nodes.append(node)
         self.current_state._added_meta = []
 
@@ -511,7 +511,7 @@ class SolidityQuery():
 
     # Search node -> Compare Node -> (handler, data)
 
-    def _compareNodes(self, searchNode, compareNode):
+    def compare_nodes(self, compareNode, searchNode):
         SOLIDITY_NODES = {
             # ('ellipsis', 'ellipsis'): (lambda x: True, None),
             # ('contract_declaration', 'contract_declaration'): (lambda x: True, None),
@@ -568,6 +568,13 @@ class SolidityQuery():
 
         _single_statement = False
         _did_any_match = False
+        if _single_statement:
+            _query_parent = query.root.children[0]
+        else:
+            _query_parent = query.root
+
+        # self.compare_state = CompareInterface(self._compareNodes, self._is_skip, self._after_skip, self._is_match)
+
         for src_node in PreOrderIter(srcRoot):
             # The new state is a child of the parent state
             self.current_state = QueryStates(state)
@@ -576,17 +583,15 @@ class SolidityQuery():
             # print(query_first_rule)
             # print('===========')
             # if src_node.type == query_first_rule.type:
-            if self._compareNodes(query_first_rule, src_node):
+            if self.compare_nodes(src_node, query_first_rule):
                 # This is done because we want to support multistatment
                 # with ellipsis. So we betch a common root branch that contains
                 # the first found rule and allows ellipis skipping
                 if _single_statement:
                     _src_parent = src_node
-                    _query_parent = query.root.children[0]
                     _srcIndexStart = 0
                 else:
                     _src_parent = src_node.parent
-                    _query_parent = query.root
                     _srcIndexStart = _src_parent.children.index(src_node)
                 # print('=========== SRC TREE ============')
                 # print(str(RenderTree(_src_parent)))
@@ -601,17 +606,8 @@ class SolidityQuery():
                 # We use the parent of the found src node for the first query
                 # rule but skipped n times, where n is the index of the found
                 # child
-                _match = compare_levels(_src_parent, _query_parent,
-                        # ellipsisNode=ellipsis_node,
-                        # commaNode=commaNode,
-                        compareFunction=self._compareNodes,
-                        srcIndexStart=_srcIndexStart,
-                        isSkipFunction=self._is_skip,
-                        afterSkipFunction=self._after_skip,
-                        isMatchFunction=self._is_match,
-                        # data=self.query_data[self.query_index]
-                        # metaVars=self.query_metavars[self.query_index],
-                        )
+                _match = self.compare_levels(_src_parent, _query_parent, _srcIndexStart)
+
                 if _match:
                     _did_any_match = True
                     self.current_state.is_match = True

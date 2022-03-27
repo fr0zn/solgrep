@@ -425,18 +425,18 @@ def test_solquery(solquery, src, query, report):
     assert result == report
 
 
-# @pytest.mark.parametrize("swc", range(100,137))
-# def test_solquery_swc(solquery, swc):
+@pytest.mark.parametrize("swc", range(100,137))
+def test_solquery_swc(solquery, swc):
 
-#     try:
-#       solquery.load_source_file('SWC/swc-{}.sol'.format(swc))
-#     except:
-#       pytest.skip("SWC does not exist")
-#     solquery.load_query_yaml_file('SWC/swc-{}.yaml'.format(swc))
+    try:
+      solquery.load_source_file('SWC/swc-{}.sol'.format(swc))
+    except:
+      pytest.skip("SWC does not exist")
+    solquery.load_query_yaml_file('SWC/swc-{}.yaml'.format(swc))
 
-#     solquery.query()
+    solquery.query()
 
-#     result = json.dumps(solquery.report())
-#     report = open('SWC/swc-{}.report'.format(swc)).read()
+    result = json.dumps(solquery.report())
+    report = open('SWC/swc-{}.report'.format(swc)).read()
 
-#     assert result == report
+    assert result == report

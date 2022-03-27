@@ -13,3 +13,5 @@ Cargo.lock
 target
 build
 repo
+
+__pycache__/

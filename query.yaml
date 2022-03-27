@@ -5,5 +5,5 @@ risk: 1
 impact: 1
 patterns:
   - pattern: function $FUN(...) ... {...}
-  - and: test(...) 
+  - and: selfdestruct(...) 
   
