@@ -1,0 +1,9 @@
+id: solidity-test 
+message: |
+  This is the message {{VERSIONS}}
+risk: 1
+impact: 1
+patterns:
+  - pattern: function $FUN(...) ... {...}
+  - and: selfdestruct(...) 
+  

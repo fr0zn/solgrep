@@ -1,0 +1,1 @@
+{"id": "solidity-test", "message": "This is the message ['withdrawWinnings', '_sendWinnings']", "risk": 1, "impact": 1, "results": 2, "metavars": [{"NAME": ["withdrawWinnings"]}, {"NAME": ["_sendWinnings"]}], "bytesrange": [[187, 360], [367, 444]], "linesrange": [[[10, 4], [14, 6]], [[16, 5], [18, 6]]]}

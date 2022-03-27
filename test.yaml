@@ -1,0 +1,15 @@
+id: solidity-test 
+message: |
+  This is the message
+risk: 1
+impact: 1
+patterns:
+  - pattern: contract $CONTRACT {...} 
+  - and: 
+      - pattern: function init(...)  ... {...}
+      - pattern: function run(...)  ... {...}
+        not: ... -= ... 
+# This will match all solidity  version, including <0.8.0
+metavars-regex:
+  $VERSION: (\d\.[0-7]\.\d*|<0\.8\.0)
+  

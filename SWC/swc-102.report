@@ -1,0 +1,1 @@
+{"id": "solidity-test", "message": "This is the message ['0.4.13']", "risk": 1, "impact": 1, "results": 1, "metavars": [{"VERSION": ["0.4.13"]}], "bytesrange": [[0, 23]], "linesrange": [[[0, 0], [0, 23]]]}

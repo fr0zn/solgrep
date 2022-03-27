@@ -1,0 +1,4 @@
+{
+  "test_yaml.py": true,
+  "tests/solquery_test.py": true
+}

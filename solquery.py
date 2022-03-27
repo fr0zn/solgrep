@@ -617,7 +617,7 @@ class SolidityQuery():
                     self.current_state.is_match = True
                     self.query_states.append(self.current_state)
 
-                if _type == 'pattern':
+                if _type == 'pattern' or _type == 'pattern-root':
                     # inside and-either or not-either
                     if state and parent:
                         if parent.type == 'and-either':
@@ -675,7 +675,7 @@ class SolidityQuery():
             def _process_node(current_pattern):
                 print(current_pattern)
                 _type = current_pattern.type
-                if _type == 'pattern':
+                if 'pattern' in _type:
                     if current_pattern.depth == 1:
                         self._do_query(self.src.root, current_pattern, self.root_state)
                         # parent.states.extend(self.query_states)
@@ -698,7 +698,11 @@ class SolidityQuery():
                                 _newTree.is_match = False
                                 # s.is_match = False
                             # _newTree.is_match = True
-                            self._do_query(s.get_root(), current_pattern, _newTree, parent=parent)
+                            if _type == 'pattern-root':
+                                _root = self.src.root
+                            else:
+                                _root = s.get_root()
+                            self._do_query(_root, current_pattern, _newTree, parent=parent)
                             self.slash_match(_newTree, True)
                             _new_level_childs.extend(_newTree.children)
 
@@ -795,12 +799,12 @@ if __name__ == '__main__':
     import sys
     sq = SolidityQuery()
     sq.load_source_file('test.sol')
-    # if len(sys.argv) > 1:
-    #     sq.load_query_yaml_file('query.yaml')
-    # else:
-    #     sq.load_query_file('query.sol')
+    if len(sys.argv) > 1:
+        sq.load_query_yaml_file('query.yaml')
+    else:
+        sq.load_query_file('query.sol')
 
-    sq.load_query_yaml_file('query.yaml')
+    # sq.load_query_yaml_file('query.yaml')
 
     # t.dot()
 
@@ -819,13 +823,13 @@ if __name__ == '__main__':
 
     print(_report)
 
-    # if sys.argv[1] == 'swc':
-    #     SWC = sys.argv[2]
-    #     print('SWC {} written'.format(SWC))
+    if sys.argv[1] == 'swc':
+        SWC = sys.argv[2]
+        print('SWC {} written'.format(SWC))
 
-    #     src = open('test.sol').read()
-    #     query = open('query.yaml').read()
+        src = open('test.sol').read()
+        query = open('query.yaml').read()
 
-    #     open('SWC/swc-{}.report'.format(SWC),'w').write(json.dumps(_report))
-    #     open('SWC/swc-{}.sol'.format(SWC),'w').write(src)
-    #     open('SWC/swc-{}.yaml'.format(SWC), 'w').write(query)
+        open('SWC/swc-{}.report'.format(SWC),'w').write(json.dumps(_report))
+        open('SWC/swc-{}.sol'.format(SWC),'w').write(src)
+        open('SWC/swc-{}.yaml'.format(SWC), 'w').write(query)

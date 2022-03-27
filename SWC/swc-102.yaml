@@ -1,0 +1,11 @@
+id: solidity-test 
+message: |
+  This is the message {{VERSIONS}}
+risk: 1
+impact: 1
+patterns:
+  - pattern: pragma solidity $VERSION
+# This will match all solidity  version, including <0.8.0
+metavars-regex:
+  $VERSION: (\d\.[0-6]\.\d*)
+  

@@ -1,0 +1,14 @@
+id: solidity-test 
+message: |
+  This is the message {{NAMES}}
+risk: 1
+impact: 1
+patterns:
+  - pattern: | 
+      function $NAME(...) ... {
+        ...
+      }
+  - not: |
+      function $NAME(...) $VISIBILITY {
+        ...
+      } 
