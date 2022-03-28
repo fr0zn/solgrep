@@ -15,3 +15,5 @@ build
 repo
 
 __pycache__/
+
+.DS_Store
