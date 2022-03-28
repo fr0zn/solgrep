@@ -1,0 +1,3 @@
+[submodule "tree-sitter-solidity"]
+	path = tree-sitter-solidity
+	url = git@github.com:fr0zn/tree-sitter-solidity.git

@@ -112,6 +112,8 @@ class TreeRoot():
         self._sexp = ''
         self.rules = []
 
+        self.nodes_count = 0
+
         self._prepare_traverse()
 
     def get_sexp(self, filters=[]):
@@ -133,6 +135,8 @@ class TreeRoot():
 
     def _parse_node(self, _node, _last_parent):
         node = TreeNode(_node.type, _node, self._src[_node.start_byte:_node.end_byte], parent=_last_parent)
+        node.id = self.nodes_count
+        self.nodes_count += 1
         if _node.type == 'ellipsis':
             node.is_ellipsis = True
         elif _node.type == ',':
@@ -157,7 +161,10 @@ class TreeRoot():
         return str(RenderTree(self.root))
 
     def dot(self):
-        UniqueDotExporter(self.root).to_picture("TreeRoot.png")
+        out = UniqueDotExporter(self.root)
+        out.to_picture("TreeRoot.png")
+        print(out)
+        return out
 
     def __repr__(self) -> str:
         return "{} ...".format(self.root.content[:10])
@@ -318,8 +325,8 @@ class SolidityQuery(CompareInterface):
         self.rule = None
 
     def _build_load_library(self):
-        Language.build_library('build/solidity.so',[ '.' ])
-        self.SOLIDITY_LANGUAGE = Language('build/solidity.so', 'solidity')
+        Language.build_library('tree-sitter-solidity/build/solidity.so',[ 'tree-sitter-solidity/' ])
+        self.SOLIDITY_LANGUAGE = Language('tree-sitter-solidity/build/solidity.so', 'Solidity')
 
     def _parse_file(self, fileName):
         _content = bytes(open(fileName).read().strip(), 'utf8')
@@ -794,7 +801,7 @@ Content {} - {}:
 if __name__ == '__main__':
     import sys
     sq = SolidityQuery()
-    sq.load_source_file('test.sol')
+    src = sq.load_source_file('test.sol')
     if len(sys.argv) > 1:
         sq.load_query_yaml_file('query.yaml')
     else:
@@ -802,7 +809,16 @@ if __name__ == '__main__':
 
     # sq.load_query_yaml_file('query.yaml')
 
-    # t.dot()
+    def nodenamefunc(node):
+        return '%s:%s' % (node.id, node.name)
+
+    for line in DotExporter(src.root, nodenamefunc=nodenamefunc):
+        print(line)
+
+    # print(src.dot())
+
+    import sys
+    sys.exit()
 
     # print(t)
     # for q in qs:
