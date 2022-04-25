@@ -1,4 +1,4 @@
-const standard_grammar = require('./grammar_original.js');
+const standard_grammar = require('./tree-sitter-solidity/grammar.js');
 
 function commaSep1(rule) {
   return seq(
@@ -76,25 +76,25 @@ module.exports = grammar(standard_grammar, {
     _primitive_type: ($, previous) => {
       return choice(
         ...previous.members,
-        /\$TYPE([0-9]+)?/ 
+        /\$TYPE([0-9]+)?/
       );
     },
     visibility: ($, previous) => {
       return choice(
         ...previous.members,
-        /\$VISIBILITY([0-9]+)?/ 
+        /\$VISIBILITY([0-9]+)?/
       );
     },
     state_mutability: ($, previous) => {
       return choice(
         ...previous.members,
-        /\$STATE([0-9]+)?/ 
+        /\$STATE([0-9]+)?/
       );
     },
     storage_location: ($, previous) => {
       return choice(
         ...previous.members,
-        /\$STORAGE([0-9]+)?/ 
+        /\$STORAGE([0-9]+)?/
       );
     },
 
@@ -121,8 +121,8 @@ module.exports = grammar(standard_grammar, {
     // Allows
     // function(..., uint256 x) {}
     parameter_list: $ => seq(
-      '(', 
-      commaSep(choice($.parameter, $.ellipsis)), 
+      '(',
+      commaSep(choice($.parameter, $.ellipsis)),
       ')'
     ),
 
@@ -159,7 +159,7 @@ module.exports = grammar(standard_grammar, {
         $._statement,
       );
     },
- 
+
     // Expression ellipsis
      _expression: ($, previous) => {
        return choice(
@@ -169,24 +169,24 @@ module.exports = grammar(standard_grammar, {
        );
      },
 
-     _assignament_expression_left: ($, previous) => {
+     _assignment_expression_left: ($, previous) => {
       return choice(
         ...previous.members,
         $.ellipsis,
-      ); 
+      );
      },
 
      _lhs_expression: ($, previous) => {
       return choice(
         ...previous.members,
         prec.right(100, $.ellipsis),
-      ); 
+      );
      },
- 
+
     //  deep_ellipsis: $ => seq(
     //    '<...', $._expression, '...>'
     //  ),
- 
+
     ellipsis: $ => '...',
   }
 });
