@@ -35,17 +35,7 @@ function commaSep(rule) {
 // }
 
 module.exports = grammar(standard_grammar, {
-  /*
-    We can't rename the grammar to 'csharp' because it relies on a custom
-    lexer ('scanner.c') which comes with the inherited grammar and provides
-    a function 'tree_sitter_c_sharp_external_scanner_create'.
-    The code generator ('tree-sitter generate') however expects this function
-    name to match the grammar name, so if we rename it here to 'csharp',
-    it will generate glue code that calls
-    'tree_sitter_csharp_external_scanner_create'
-    while only 'tree_sitter_c_sharp_external_scanner_create' is available.
-  */
-  name: 'solidity',
+  name: 'solgrep',
 
   rules: {
 

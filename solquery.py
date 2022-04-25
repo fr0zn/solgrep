@@ -309,6 +309,9 @@ class SolidityQuery(CompareInterface):
         self.parser = Parser()
         self.parser.set_language(self.SOLIDITY_LANGUAGE)
 
+        self.parser_query = Parser()
+        self.parser_query.set_language(self.SOLIDITY_QUERY_LANGUAGE)
+
         self.src = None
         # self.queries = None
 
@@ -325,15 +328,19 @@ class SolidityQuery(CompareInterface):
         self.rule = None
 
     def _build_load_library(self):
-        Language.build_library('tree-sitter-solidity/build/solidity.so',[ 'tree-sitter-solidity/' ])
+        Language.build_library('tree-sitter-solidity/build/solidity.so',[ 'tree-sitter-solidity/', './' ])
         self.SOLIDITY_LANGUAGE = Language('tree-sitter-solidity/build/solidity.so', 'Solidity')
+        self.SOLIDITY_QUERY_LANGUAGE = Language('tree-sitter-solidity/build/solidity.so', 'solgrep')
 
-    def _parse_file(self, fileName):
+    def _parse_file(self, fileName, query=False):
         _content = bytes(open(fileName).read().strip(), 'utf8')
         # Append and prepend ellipsis to the query
         # _content = '...\n' + _content + '\n...'
         # _content = _content + '\n...'
-        return (_content, self.parser.parse(_content))
+        if query:
+            return (_content, self.parser_query.parse(_content))
+        else:
+            return (_content, self.parser.parse(_content))
 
     def load_source_string(self, string):
         _content = bytes(string.strip(), 'utf8')
@@ -371,7 +378,7 @@ class SolidityQuery(CompareInterface):
 
 
     def load_query_file(self, fileName):
-        _content, _tree = self._parse_file(fileName)
+        _content, _tree = self._parse_file(fileName, query=True)
         # TODO: Checks MISSING ERROR
         root = TreePattern(type="patterns")
         TreePattern(type='pattern', parent=root, pattern=TreeRoot(_content, _tree.root_node))
@@ -810,9 +817,10 @@ if __name__ == '__main__':
     # sq.load_query_yaml_file('query.yaml')
 
     def nodenamefunc(node):
-        return '%s:%s' % (node.id, node.name)
+        return '_%s:%s' % (node.id, node.name)
 
-    for line in DotExporter(src.root, nodenamefunc=nodenamefunc):
+    src = sq.load_query_file('test.sol')
+    for line in DotExporter(src.children[0].pattern.root, nodenamefunc=nodenamefunc):
         print(line)
 
     # print(src.dot())
