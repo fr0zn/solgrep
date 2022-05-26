@@ -6,7 +6,7 @@ def solquery():
     return SolidityQuery()
 
 @pytest.mark.parametrize("swc", range(100,137))
-def test_solquery_swc(solquery, swc):
+def test_swc(solquery, swc):
 
     try:
       solquery.load_source_file('SWC/swc-{}.sol'.format(swc))

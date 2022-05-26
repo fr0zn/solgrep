@@ -306,8 +306,8 @@ class SolidityQuery(CompareInterface):
 
     def __init__(self):
         self._build_load_library()
-        self.parser = Parser()
-        self.parser.set_language(self.SOLIDITY_LANGUAGE)
+        # self.parser = Parser()
+        # self.parser.set_language(self.SOLIDITY_QUERY_LANGUAGE)
 
         self.parser_query = Parser()
         self.parser_query.set_language(self.SOLIDITY_QUERY_LANGUAGE)
@@ -337,20 +337,20 @@ class SolidityQuery(CompareInterface):
         # Append and prepend ellipsis to the query
         # _content = '...\n' + _content + '\n...'
         # _content = _content + '\n...'
-        if query:
-            return (_content, self.parser_query.parse(_content))
-        else:
-            return (_content, self.parser.parse(_content))
+        # if query:
+        return (_content, self.parser_query.parse(_content))
+        # else:
+        #     return (_content, self.parser.parse(_content))
 
     def load_source_string(self, string):
         _content = bytes(string.strip(), 'utf8')
-        _tree = self.parser.parse(_content)
+        _tree = self.parser_query.parse(_content)
         self.src = TreeRoot(_content, _tree.root_node)
         return self.src
 
     def load_query_string(self, string):
         _content = bytes(string.strip(), 'utf8')
-        _tree = self.parser.parse(_content)
+        _tree = self.parser_query.parse(_content)
         query = TreeRoot(_content, _tree.root_node)
         return query
         # self.queries = TreeRoot(_content, _tree.root_node)
@@ -546,12 +546,14 @@ class SolidityQuery(CompareInterface):
         }
         self.current_state._is_skip = False
 
+
         _fnc, _data = SOLIDITY_NODES.get(
             (searchNode.type, compareNode.type),
             (self._compare_default, {})
             )
 
         _result =  _fnc(searchNode, compareNode, _data)
+        print(compareNode, searchNode, _result)
         return _result
         if _result == False:
             # print('NOO:')
@@ -679,11 +681,9 @@ class SolidityQuery(CompareInterface):
 
 
     def query(self):
-        print(RenderTree(self.patterns))
 
         def _traverse(parent):
             def _process_node(current_pattern):
-                print(current_pattern)
                 _type = current_pattern.type
                 if 'pattern' in _type:
                     if current_pattern.depth == 1:
@@ -752,7 +752,7 @@ class SolidityQuery(CompareInterface):
         self.root_state.is_match = True
         _traverse(self.patterns)
 
-        print(RenderTree(self.root_state))
+        # print(RenderTree(self.root_state))
 
         def _delete_node(node):
             if node != node.root:
@@ -781,7 +781,7 @@ class SolidityQuery(CompareInterface):
 
             r.meta_vars = _metavars
 
-        print(RenderTree(self.root_state))
+        # print(RenderTree(self.root_state))
 
     def report(self):
 
