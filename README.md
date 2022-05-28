@@ -109,9 +109,9 @@ Semgrep does support multiple query formats, including a single pattern search a
 There are 4 different functions:
 
 - `sg.load_query_file`: It will load a single file that contains a valid query solidity code.
-- `sg.load_query_string`: Same as `load_query_file` but the content is taken directly from an string.
+- `sg.load_query_string`: Same as `load_query_file` but the content is taken directly from a string.
 - `sg.load_query_yaml_file`: This function will load a complex yaml rule file, following the "Semgrep rule file" format.
-- `sg.load_query_yaml_string`: Same as `load_query_yaml_file` but the content is taken directly from an string.
+- `sg.load_query_yaml_string`: Same as `load_query_yaml_file` but the content is taken directly from a string.
 
 ## Displaying the AST
 
@@ -208,6 +208,86 @@ query.dot('query.png')
 ![](./images/root.png)
 
 ![](./images/query.png)
+
+## Getting the query results (report)
+
+The use the `query` content against the `source` content, the `query()` function should be called. This function will compare using a BFS algorithm the nodes of both trees and skip the ones with ellipsis syntax as described on the technical section.
+
+```
+sg.query()
+```
+
+Once the query is executed, the results can be obtained by using the `report()` function, which will display a dictionary containing information about the query results.
+
+```
+report = sg.report()
+```
+
+As an example, the query and source code displayed in the following snippet would produce the result underneath: 
+
+``` 
+from solgrep import SolGrep
+
+sg = SolGrep()
+
+src = '''
+pragma solidity 0.8.12;
+
+contract Test {
+    uint256 public a;
+
+    function name() external {
+        a = 1337;
+    }
+}
+'''
+
+query_src = '''
+id: solidity-test 
+message: |
+  Found {{FUNCS | pluralize('a function', 'some functions')}}: {{FUNCS | comma}}
+risk: 1
+impact: 1
+patterns:
+  - pattern: function $FUNC(...) ... {...}
+'''
+
+sg.load_source_string(src)
+sg.load_query_yaml_string(query_src)
+
+sg.query()
+
+report = sg.report()
+
+print(report)
+```
+
+``` 
+{
+  "id": "solidity-test",
+  "message": "Found a function: name",
+  "risk": 1,
+  "impact": 1,
+  "results": 1,
+  "metavars": [
+    {
+      "FUNC": [
+        "name"
+      ]
+    }
+  ],
+  "bytesrange": [
+    [ 68, 118 ]
+  ],
+  "linesrange": [
+    [ [ 5, 4 ], [ 7, 5 ] ]
+  ]
+}
+```
+
+As seen in the previous snippet, the returned dictionary does contain all the details for the result of the query. Including the formatted message, risk, impact, metavars lists and the `byterange` and `linesrange` of all the found results.
+
+The `byterange` does contain the starting character and end character in the original source code that do match the query. Furthermore, the `linesrange` do contain the start line and character on that line and the end line and character of that line.
 
 ## Semgrep rule file
 
