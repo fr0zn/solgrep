@@ -1,5 +1,5 @@
 from sys import meta_path
-from solquery_compare import CompareInterface
+from solgrep_compare import CompareInterface
 from tree_sitter import Language, Parser
 from anytree import RenderTree, NodeMixin,PreOrderIter,LevelOrderGroupIter
 from anytree.exporter import DotExporter,UniqueDotExporter
@@ -307,7 +307,7 @@ class QueryStates(NodeMixin):
         return '{} - {} - {} - {}'.format(self.id, self.is_match, self.meta_vars, _last)
 
 
-class SolidityQuery(CompareInterface):
+class SolGrep(CompareInterface):
 
     def __init__(self):
         self._build_load_library()
@@ -809,7 +809,7 @@ Content {} - {}:
 
 if __name__ == '__main__':
     import sys
-    sq = SolidityQuery()
+    sq = SolGrep()
     src = sq.load_source_file('test.sol')
     if len(sys.argv) > 1:
         sq.load_query_yaml_file('query.yaml')
@@ -821,8 +821,11 @@ if __name__ == '__main__':
     def nodenamefunc(node):
         return '_%s:%s' % (node.id, node.name)
 
-    src = sq.load_query_file('test.sol')
-    for line in DotExporter(src.children[0].pattern.root, nodenamefunc=nodenamefunc):
+    qry = sq.load_query_file('test.sol')
+    # print(src.children[0].pattern.root)
+    print(src)
+    print(str(RenderTree(src)))
+    for line in DotExporter(qry.children[0].pattern.root, nodenamefunc=nodenamefunc):
         print(line)
 
     # print(src.dot())

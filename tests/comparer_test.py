@@ -1,4 +1,4 @@
-from solquery_compare import CompareInterface
+from solgrep_compare import CompareInterface
 from anytree import Node, RenderTree, AsciiStyle, NodeMixin
 import pytest
 

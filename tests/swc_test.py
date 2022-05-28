@@ -1,9 +1,9 @@
-from solquery import *
+from solgrep import *
 import pytest
 
 @pytest.fixture()
 def solquery():
-    return SolidityQuery()
+    return SolGrep()
 
 @pytest.mark.parametrize("swc", range(100,137))
 def test_swc(solquery, swc):

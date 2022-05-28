@@ -1,128 +1,8 @@
-from solquery import *
+from solgrep import *
 import pytest
 import json
 
 testdata = [
-    (
-'''
-pragma solidity 0.7.0;
-''',
-'''
-id: solidity-test
-message: >
-  This is the message for testing
-risk: 1
-impact: 1
-patterns:
-  - pattern: pragma solidity 0.7.0
-''',
-        # Report
-        {'id': 'solidity-test', 'message': 'This is the message for testing', 'risk': 1, 'impact': 1, 'results': 1, 'metavars': [{}], 'bytesrange': [(0, 22)], 'linesrange': [((0, 0), (0, 22))]}
-    ),
-    (
-'''
-pragma solidity >0.7.0 <=0.8.0;
-''',
-'''
-id: solidity-test
-message: >
-  This is the message for testing {{VERSIONS}}
-risk: 1
-impact: 1
-patterns:
-  - pattern: pragma solidity $VERSION;
-metavars-regex:
-  $VERSION: .*(=|>|<|^).*
-''',
-        # Report
-        {'id': 'solidity-test', 'message': "This is the message for testing ['>0.7.0 <=0.8.0']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': [{'VERSION': ['>0.7.0 <=0.8.0']}], 'bytesrange': [(0, 31)], 'linesrange': [((0, 0), (0, 31))]}
-
-    ),
-    (
-'''
-function NAME(){
-    string memory a = "asdf"
-    /* comment */
-    "more";
-}
-''',
-'''
-id: solidity-test
-message: |
-  This is the message for testing {{STRING5S}} {{AS}}
-risk: 1
-impact: 1
-patterns:
-  - pattern: string memory $A = '$STRING5';
-metavars-regex:
-  $STRING5: a.*
-''',
-        # Report
-        {'id': 'solidity-test', 'message': "This is the message for testing ['asdfmore'] ['a']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': [{'A': ['a'], 'STRING5': ['asdfmore']}], 'bytesrange': [(21, 75)], 'linesrange': [((1, 4), (3, 11))]}
-
-    ),
-    (
-'''
-function setVars(address _contract, uint256 num) public payable {
-}
-''',
-'''
-id: solidity-test
-message: |
-  This is the message for testing {{NAMES}} {{CS}} {{NUMS}}
-risk: 1
-impact: 1
-patterns:
-  - pattern: |
-      function $NAME(..., address $C, ..., uint256 $NUM, ...) ... {
-      ...
-      }
-''',
-        # Report
-        {'id': 'solidity-test', 'message': "This is the message for testing ['setVars'] ['_contract'] ['num']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': [{'NAME': ['setVars'], 'C': ['_contract'], 'NUM': ['num']}], 'bytesrange': [(0, 67)], 'linesrange': [((0, 0), (1, 1))]}
-
-    ),
-    (
-'''
-contract Test {
-
-    uint public y;
-
-    function one() public view returns(uint[]) {
-        uint[10] a = new uint[](10);
-
-        // More nodes
-
-        return a;
-    }
-
-}
-''',
-'''
-id: solidity-test
-message: |
-  This is the message for testing {{NAMES}} {{FNCS}} {{TYPES}} {{NUMS}}
-risk: 1
-impact: 1
-patterns:
-  - pattern: |
-      contract $NAME {
-      ...
-      $TYPE $VISIBILITY $Y;
-      ...
-      function $FNC() $VISIBILITY $STATE returns($TYPE[]) {
-          ...
-          $TYPE[$NUM] $VAR = new $TYPE[]($NUM);
-          ...
-          return $VAR;
-          }
-          ...
-      }
-''',
-        # Report
-        {'id': 'solidity-test', 'message': "This is the message for testing ['Test'] ['one'] ['uint'] ['10']", 'risk': 1, 'impact': 1, 'results': 1, 'metavars': [{'NAME': ['Test'], 'TYPE': ['uint'], 'VISIBILITY': ['public'], 'Y': ['y'], 'FNC': ['one'], 'STATE': ['view'], 'NUM': ['10'], 'VAR': ['a']}], 'bytesrange': [(0, 173)], 'linesrange': [((0, 0), (12, 1))]}
-
-    ),
     (
 '''
 contract Test {
@@ -410,7 +290,7 @@ metavars-regex:
 
 @pytest.fixture()
 def solquery():
-    return SolidityQuery()
+    return SolGrep()
 
 
 @pytest.mark.parametrize("src,query,report", testdata)
@@ -422,4 +302,8 @@ def test_solquery(solquery, src, query, report):
     solquery.load_query_yaml_string(query)
     solquery.query()
     result = solquery.report()
+    print('RESULT')
+    print('============================')
+    print(result)
+    print('============================')
     assert result == report
