@@ -160,10 +160,9 @@ class TreeRoot():
     def __str__(self):
         return str(RenderTree(self.root))
 
-    def dot(self):
+    def dot(self, filename="root.png"):
         out = UniqueDotExporter(self.root)
-        out.to_picture("TreeRoot.png")
-        print(out)
+        out.to_picture(filename)
         return out
 
     def __repr__(self) -> str:

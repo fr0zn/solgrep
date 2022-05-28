@@ -57,7 +57,7 @@ The the usage of the tool is very simple. One must import the `SolGrep` class fr
 ```
 from solgrep import SolGrep
 
-sq = Solgrep()
+sg = Solgrep()
 ```
 
 ### Loading the source code
@@ -81,7 +81,7 @@ contract Test {
 Loading the source code from the `source.sol` file:
 
 ```
-sq.load_source_file("source.sol")
+sg.load_source_file("source.sol")
 ```
 
 Loading the source code directly from a string:
@@ -99,15 +99,115 @@ contract Test {
 }
 '''
 
-sq.load_source_string(src)
+sg.load_source_string(src)
 ```
 
 ## Loading the query rule
 
 Semgrep does support multiple query formats, including a single pattern search and complex YAML pattern syntax as seen in "Semgrep rule file".
 
-## Displaying the AST and exporting a graph
+There are 4 different functions:
 
+- `sg.load_query_file`: It will load a single file that contains a valid query solidity code.
+- `sg.load_query_string`: Same as `load_query_file` but the content is taken directly from an string.
+- `sg.load_query_yaml_file`: This function will load a complex yaml rule file, following the "Semgrep rule file" format.
+- `sg.load_query_yaml_string`: Same as `load_query_yaml_file` but the content is taken directly from an string.
+
+## Displaying the AST
+
+When loading a query file or source file, the parsed tree can be stored into a variable and later worked on:
+
+```
+src = '''
+pragma solidity 0.8.12;
+
+contract Test {
+    uint256 public a;
+
+    function name() external {
+        a = 1337;
+    }
+}
+'''
+
+query_src = '''
+contract $CONTRACT {
+    ...
+}
+'''
+
+source = sg.load_source_string(src)
+query = sg.load_query_string(query_src)
+```
+
+The `source` and `query` variables do contain a tree that can be printed and exported into a dot graph or png image:
+
+```
+print(source)
+
+'source_file'
+├── 'pragma_directive'
+│   ├── 'pragma'
+│   ├── 'solidity_directive'
+│   │   ├── 'solidity'
+│   │   └── 'pragma_versions'
+│   └── ';'
+└── 'contract_declaration'
+    ├── 'contract'
+    ├── 'identifier'
+    └── 'contract_body'
+        ├── '{'
+        ├── 'state_variable_declaration'
+        │   ├── 'type_name'
+        │   │   └── 'primitive_type'
+        │   │       └── 'uint256'
+        │   ├── 'visibility'
+        │   │   └── 'public'
+        │   ├── 'identifier'
+        │   └── ';'
+        ├── 'function_definition'
+        │   ├── 'function'
+        │   ├── 'identifier'
+        │   ├── 'parameter_list'
+        │   │   ├── '('
+        │   │   └── ')'
+        │   ├── 'visibility'
+        │   │   └── 'external'
+        │   └── 'function_body'
+        │       ├── '{'
+        │       ├── 'assignment_expression'
+        │       │   ├── 'identifier'
+        │       │   ├── '='
+        │       │   └── 'number_literal'
+        │       ├── ';'
+        │       └── '}'
+        └── '}'
+```
+
+```
+print(query)
+
+'source_file'
+└── 'contract_declaration'
+    ├── 'contract'
+    ├── 'identifier'
+    └── 'contract_body'
+        ├── '{'
+        ├── 'ellipsis'
+        └── '}'
+```
+### Exporting the AST to an image 
+
+This can be done with the following syntax witch will produce the images below the snippet:
+
+```
+source.dot('root.png')
+query.dot('query.png')
+```
+
+![](./images/root.png)
+
+![](./images/query.png)
 
 ## Semgrep rule file
 
