@@ -209,7 +209,7 @@ class QueryRule():
         self.impact = impact
 
 
-    def _format_message_meta(self, _metavars):
+    def _format_message_meta(self, _metavars, _contents):
         template_vars = {}
         for r in _metavars:
             for k, v in r.items():
@@ -219,9 +219,10 @@ class QueryRule():
                 else:
                     template_vars[_s_key].extend(v)
         template_vars['RESULTS'] = _metavars
+        template_vars['CONTENTS'] = _contents
         return self.message.render(template_vars)
 
-    def report(self, matched_queries):
+    def report(self, matched_queries, original_content):
         if len(matched_queries) == 0:
             return {}
         _metavars = []
@@ -237,9 +238,14 @@ class QueryRule():
             _metavars.append(_match_metavars)
 
 
+        contents = []
+        for byte_match in _bytesranges:
+            _match_content = original_content[byte_match[0]:byte_match[1]].decode('utf8')
+            contents.append(_match_content)
+
         _data = {
             'id': self.id,
-            'message': self._format_message_meta(_metavars),
+            'message': self._format_message_meta(_metavars, contents),
             'risk': self.risk,
             'impact': self.impact,
             'results': len(matched_queries),
@@ -248,7 +254,6 @@ class QueryRule():
             'linesrange': _linesranges
         }
         return _data
-        # return json.dumps(_data)
 
 
 class QueryStates(NodeMixin):
@@ -516,9 +521,6 @@ class SolidityQuery(CompareInterface):
 
     def _compare_expression(self, searchNode, compareNode, args):
         if searchNode.type == 'expression_statement':
-            print(searchNode.children)
-            print(searchNode.children)
-            print(searchNode.children)
             print(searchNode.children)
             return False
 
@@ -797,7 +799,7 @@ Content {} - {}:
 
 '''.format(_start, _end, self.src.root.content[_start:_end].decode('utf8'), query_result.meta_vars))
 
-        return self.rule.report(self.root_state.children)
+        return self.rule.report(self.root_state.children, self.src.root.content)
 
     def preload_meta(self, metaRules):
         print(metaRules)
