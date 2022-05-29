@@ -1,6 +1,7 @@
 from solgrep_compare import CompareInterface
 from anytree import Node, RenderTree, AsciiStyle, NodeMixin
 import pytest
+import logging
 
 class NodeE(NodeMixin):  
     def __init__(self, name, parent=None, children=None):
@@ -72,8 +73,8 @@ def test1(base_tree, compare):
     s_j = NodeE("...", parent=s_h)
     s_l = NodeE("l", parent=s_h)
 
-    print(RenderTree(base_tree, style=AsciiStyle()).by_attr())
-    print(RenderTree(s_a, style=AsciiStyle()).by_attr())
+    logging.info(RenderTree(base_tree, style=AsciiStyle()).by_attr())
+    logging.info(RenderTree(s_a, style=AsciiStyle()).by_attr())
 
     _match = compare.compare_levels(base_tree, s_a)
     assert _match == True
@@ -89,7 +90,7 @@ def test2(base_tree, compare):
     s_n = NodeE("...", parent=s_a)
     s_c = NodeE("c", parent=s_a)
 
-    print(RenderTree(s_a, style=AsciiStyle()).by_attr())
+    logging.info(RenderTree(s_a, style=AsciiStyle()).by_attr())
     _match = compare.compare_levels(base_tree, s_a)
 
     assert _match == True
@@ -107,7 +108,7 @@ def test3(base_tree, compare):
     s_h = NodeE("h", parent=s_a)
     s_i = NodeE("...", parent=s_h)
 
-    print(RenderTree(s_a, style=AsciiStyle()).by_attr())
+    logging.info(RenderTree(s_a, style=AsciiStyle()).by_attr())
     _match = compare.compare_levels(base_tree, s_a)
 
     assert _match == True
@@ -123,7 +124,7 @@ def test4(base_tree, compare):
     s_b = NodeE("...", parent=s_a)
     s_h = NodeE("h", parent=s_a)
 
-    print(RenderTree(s_a, style=AsciiStyle()).by_attr())
+    logging.info(RenderTree(s_a, style=AsciiStyle()).by_attr())
     _match = compare.compare_levels(base_tree, s_a)
 
     assert _match == True
@@ -143,7 +144,7 @@ def test5(base_tree, compare):
     s_n = NodeE("...", parent=s_a)
     # s_g = NodeE("g", parent=s_a)
 
-    print(RenderTree(s_a, style=AsciiStyle()).by_attr())
+    logging.info(RenderTree(s_a, style=AsciiStyle()).by_attr())
     _match = compare.compare_levels(base_tree, s_a)
 
     assert _match == True
@@ -162,7 +163,7 @@ def test6(base_tree, compare):
     s_n = NodeE("...", parent=s_a)
     # s_g = NodeE("g", parent=s_a)
 
-    print(RenderTree(s_a, style=AsciiStyle()).by_attr())
+    logging.info(RenderTree(s_a, style=AsciiStyle()).by_attr())
     _match = compare.compare_levels(base_tree, s_a)
 
     assert _match == True
@@ -183,7 +184,7 @@ def test7(base_tree, compare):
     s_n = NodeE("...", parent=s_a)
     # s_g = NodeE("g", parent=s_a)
 
-    print(RenderTree(s_a, style=AsciiStyle()).by_attr())
+    logging.info(RenderTree(s_a, style=AsciiStyle()).by_attr())
     _match = compare.compare_levels(base_tree, s_a)
 
     assert _match == True
@@ -201,7 +202,7 @@ def test8(base_tree, compare):
     s_g = NodeE("g", parent=s_a)
     s_n = NodeE("h", parent=s_a)
 
-    print(RenderTree(s_a, style=AsciiStyle()).by_attr())
+    logging.info(RenderTree(s_a, style=AsciiStyle()).by_attr())
     _match = compare.compare_levels(base_tree, s_a)
 
     assert _match == True
@@ -225,7 +226,7 @@ def test9(base_tree, compare):
     # s_g = NodeE("g", parent=s_a)
     s_n = NodeE("...", parent=s_a)
 
-    print(RenderTree(s_a, style=AsciiStyle()).by_attr())
+    logging.info(RenderTree(s_a, style=AsciiStyle()).by_attr())
     _match = compare.compare_levels(base_tree, s_a)
 
     assert _match == False
@@ -243,7 +244,7 @@ def test10(base_tree, compare):
     # s_g = NodeE("g", parent=s_a)
     s_n = NodeE("h", parent=s_a)
 
-    print(RenderTree(s_a, style=AsciiStyle()).by_attr())
+    logging.info(RenderTree(s_a, style=AsciiStyle()).by_attr())
     _match = compare.compare_levels(base_tree, s_a)
 
     assert _match == False
@@ -266,7 +267,7 @@ def test11(base_tree, compare):
     s_n = NodeE("...", parent=s_a)
     s_n = NodeE("j", parent=s_a)
 
-    print(RenderTree(s_a, style=AsciiStyle()).by_attr())
+    logging.info(RenderTree(s_a, style=AsciiStyle()).by_attr())
     _match = compare.compare_levels(base_tree, s_a)
 
     assert _match == False
@@ -290,7 +291,7 @@ def test12(base_tree, compare):
     s_n = NodeE("...", parent=s_a)
     # s_g = NodeE("g", parent=s_a)
 
-    print(RenderTree(s_a, style=AsciiStyle()).by_attr())
+    logging.info(RenderTree(s_a, style=AsciiStyle()).by_attr())
     _match = compare.compare_levels(base_tree, s_a)
 
     assert _match == False
@@ -315,7 +316,7 @@ def test12(compare):
     e = NodeE("e", parent=d)
     f = NodeE("f", parent=c)
 
-    print(RenderTree(a, style=AsciiStyle()).by_attr())
+    logging.info(RenderTree(a, style=AsciiStyle()).by_attr())
 
     # a
     # |-- ...
@@ -335,7 +336,7 @@ def test12(compare):
     s_e = NodeE("e", parent=s_d)
     # s_g = NodeE("g", parent=s_a)
 
-    print(RenderTree(s_a, style=AsciiStyle()).by_attr())
+    logging.info(RenderTree(s_a, style=AsciiStyle()).by_attr())
     _match = compare.compare_levels(a, s_a)
 
     assert _match == True

@@ -295,15 +295,11 @@ def solquery():
 
 @pytest.mark.parametrize("src,query,report", testdata)
 def test_solquery(solquery, src, query, report):
+    pass
     src = src.strip()
     query = query.strip()
     solquery.load_source_string(src)
-    # solquery.load_query_string(query)
     solquery.load_query_yaml_string(query)
     solquery.query()
     result = solquery.report()
-    print('RESULT')
-    print('============================')
-    print(result)
-    print('============================')
     assert result == report

@@ -8,6 +8,7 @@ from jinja2.filters import FILTERS
 import json
 import yaml
 import re
+import logging
 
 def sexp_format(sexp):
     _str = ''
@@ -375,7 +376,7 @@ class SolGrep(CompareInterface):
             try:
                 self.load_query_yaml_string(stream)
             except yaml.YAMLError as exc:
-                print(exc)
+                logging.info(exc)
                 raise ValueError('Invalid YAML')
         # TODO: Checks MISSING ERROR
         # return self.queries
@@ -411,7 +412,7 @@ class SolGrep(CompareInterface):
                 self._parse_query_yaml_patterns(_root, v)
 
     def _parse_query_yaml(self, _data):
-        print(_data)
+        logging.info(_data)
         for req in ['message', 'id', 'risk', 'impact']:
             if req not in _data:
                 raise ValueError('Missing {} on the query file'.format(req))
@@ -435,7 +436,7 @@ class SolGrep(CompareInterface):
         #             raise ValueError('Patterns should start with "pattern" query')
         #         _query = self.load_query_string(_pattern)
         #         patterns.append((_type, _query))
-        # print(patterns)
+        # logging.info(patterns)
 
         if 'metavars-regex' in _data:
             self.preload_meta(_data['metavars-regex'])
@@ -511,16 +512,16 @@ class SolGrep(CompareInterface):
 
     def _compare_default(self, searchNode, compareNode, args):
         if searchNode.type == compareNode.type:
-            # print('TRUE', searchNode.type, compareNode.type)
+            # logging.info('TRUE', searchNode.type, compareNode.type)
             # return searchNode.content == compareNode.content
             return True
         else:
-            # print('DIFF', searchNode.type, compareNode.type)
+            # logging.info('DIFF', searchNode.type, compareNode.type)
             return False
 
     def _compare_expression(self, searchNode, compareNode, args):
         if searchNode.type == 'expression_statement':
-            print(searchNode.children)
+            logging.info(searchNode.children)
             return False
 
 
@@ -554,14 +555,14 @@ class SolGrep(CompareInterface):
             )
 
         _result =  _fnc(searchNode, compareNode, _data)
-        print(compareNode, searchNode, _result)
+        logging.info(compareNode, searchNode, _result)
         return _result
         if _result == False:
-            # print('NOO:')
-            print(searchNode, compareNode)
+            # logging.info('NOO:')
+            logging.info(searchNode, compareNode)
         else:
-            # print('YES:')
-            print(searchNode, compareNode)
+            # logging.info('YES:')
+            logging.info(searchNode, compareNode)
 
         return _result
 
@@ -595,10 +596,10 @@ class SolGrep(CompareInterface):
         for src_node in PreOrderIter(srcRoot):
             # The new state is a child of the parent state
             self.current_state = QueryStates(state)
-            # print('============= CHECKING NODES ================')
-            # print(src_node)
-            # print(query_first_rule)
-            # print('===========')
+            # logging.info('============= CHECKING NODES ================')
+            # logging.info(src_node)
+            # logging.info(query_first_rule)
+            # logging.info('===========')
             # if src_node.type == query_first_rule.type:
             if self.compare_nodes(src_node, query_first_rule):
                 # This is done because we want to support multistatment
@@ -610,15 +611,14 @@ class SolGrep(CompareInterface):
                 else:
                     _src_parent = src_node.parent
                     _srcIndexStart = _src_parent.children.index(src_node)
-                # print('=========== SRC TREE ============')
-                # print(str(RenderTree(_src_parent)))
-                # print('=========== SRC CONTENT ============')
-                # print(src_node.content)
-                # print()
-                # print('=========== QUERY TREE ============')
-                # print(query)
-                # print('=========== QUERY CONTENT ============')
-                # print(query.root.content)
+                # logging.info('=========== SRC TREE ============')
+                # logging.info(str(RenderTree(_src_parent)))
+                # logging.info('=========== SRC CONTENT ============')
+                # logging.info(src_node.content)
+                # logging.info('=========== QUERY TREE ============')
+                # logging.info(query)
+                # logging.info('=========== QUERY CONTENT ============')
+                # logging.info(query.root.content)
                 # We are queriying using the full queries root content
                 # We use the parent of the found src node for the first query
                 # rule but skipped n times, where n is the index of the found
@@ -649,10 +649,10 @@ class SolGrep(CompareInterface):
                     # TODO: Not needed
                     state.is_match = _match
 
-                print('=========== MATCH ============')
-                print(_match)
-                # print(this_query_states)
-                print('==============================')
+                logging.info('=========== MATCH ============')
+                logging.info(_match)
+                # logging.info(this_query_states)
+                logging.info('==============================')
                 # break
 
         # After all nodes are searched
@@ -660,16 +660,15 @@ class SolGrep(CompareInterface):
         if _type == 'and':
             if not _did_any_match:
                 state.is_match = False
-        print()
-                # print(_start, _end)
-                # print('-------------')
-                # print(self.src.root.content[_start:_end])
-                # print('-------------')
-                # print(query_result.meta_vars)
+                # logging.info(_start, _end)
+                # logging.info('-------------')
+                # logging.info(self.src.root.content[_start:_end])
+                # logging.info('-------------')
+                # logging.info(query_result.meta_vars)
 
-        # print([x.is_match for x in self.query_states])
-        # print([x._matched_nodes for x in self.query_states])
-        print('=============')
+        # logging.info([x.is_match for x in self.query_states])
+        # logging.info([x._matched_nodes for x in self.query_states])
+        logging.info('=============')
         # return this_query_states
         # return self.query_states
 
@@ -719,7 +718,7 @@ class SolGrep(CompareInterface):
 
                         current_pattern.states = _new_level_childs
                         # current.states.children = [s for s in _remaining_states if s.is_match]
-                        # print(current.states.children)
+                        # logging.info(current.states.children)
                 elif _type == 'and':
                     self.query_states = []
                     for s in parent.states:
@@ -753,7 +752,7 @@ class SolGrep(CompareInterface):
         self.root_state.is_match = True
         _traverse(self.patterns)
 
-        # print(RenderTree(self.root_state))
+        # logging.info(RenderTree(self.root_state))
 
         def _delete_node(node):
             if node != node.root:
@@ -782,16 +781,16 @@ class SolGrep(CompareInterface):
 
             r.meta_vars = _metavars
 
-        # print(RenderTree(self.root_state))
+        # logging.info(RenderTree(self.root_state))
 
     def report(self):
 
 
         # Parsed a yaml rule
-        print('================= RESULTS ==================')
+        logging.info('================= RESULTS ==================')
         for query_result in self.root_state.children:
             _start, _end = query_result.get_bytes_range()
-            print('''============================
+            logging.info('''============================
 Content {} - {}:
 
 {}
@@ -801,59 +800,6 @@ Content {} - {}:
         return self.rule.report(self.root_state.children, self.src.root.content)
 
     def preload_meta(self, metaRules):
-        print(metaRules)
+        logging.info(metaRules)
         new_data = { bytes(key, 'utf8'): bytes(val, 'utf8') for key, val in metaRules.items() }
         self.metaRules = new_data
-
-
-if __name__ == '__main__':
-    import sys
-    sq = SolGrep()
-    src = sq.load_source_file('test.sol')
-    if len(sys.argv) > 1:
-        sq.load_query_yaml_file('query.yaml')
-    else:
-        sq.load_query_file('query.sol')
-
-    # sq.load_query_yaml_file('query.yaml')
-
-    def nodenamefunc(node):
-        return '_%s:%s' % (node.id, node.name)
-
-    qry = sq.load_query_file('test.sol')
-    # print(src.children[0].pattern.root)
-    print(src)
-    print(str(RenderTree(src)))
-    for line in DotExporter(qry.children[0].pattern.root, nodenamefunc=nodenamefunc):
-        print(line)
-
-    # print(src.dot())
-
-    import sys
-    sys.exit()
-
-    # print(t)
-    # for q in qs:
-    #     print(q)
-    #     print(q.get_sexp())
-    #     print(q.metavars)
-
-    # sq.preload_meta({
-    #     b'$VISIBILITY': b'^((?!public).)*$'
-    # })
-
-    sq.query()
-    _report = sq.report()
-
-    print(_report)
-
-    if sys.argv[1] == 'swc':
-        SWC = sys.argv[2]
-        print('SWC {} written'.format(SWC))
-
-        src = open('test.sol').read()
-        query = open('query.yaml').read()
-
-        open('SWC/swc-{}.report'.format(SWC),'w').write(json.dumps(_report))
-        open('SWC/swc-{}.sol'.format(SWC),'w').write(src)
-        open('SWC/swc-{}.yaml'.format(SWC), 'w').write(query)

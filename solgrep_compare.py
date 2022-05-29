@@ -82,7 +82,6 @@ class CompareInterface():
                         # for added in data['addedMeta']:
                         #     metaVars.pop(added)
                         # beforeMetaVar = dict(metaVars)
-                        # print('A',metaVars)
                         # metaVars = {}
                         src_index += 1
                     else:

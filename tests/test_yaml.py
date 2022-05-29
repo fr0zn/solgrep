@@ -30,15 +30,14 @@ def parse(root, data):
                     AnyNode(type=k, parent=_root, pattern=v)
             parse(_root, v)
 
+if __name__ == '__main__':
+    with open("test.yaml", "r") as stream:
+        try:
+            out = yaml.safe_load(stream)
+            print(out['patterns'])
+            parse(root, out['patterns'])
+            print(RenderTree(root))
 
-
-with open("test.yaml", "r") as stream:
-    try:
-        out = yaml.safe_load(stream)
-        print(out['patterns'])
-        parse(root, out['patterns'])
-        print(RenderTree(root))
-
-        # root = importer.import_(out)
-    except yaml.YAMLError as exc:
-        print(exc)
+            # root = importer.import_(out)
+        except yaml.YAMLError as exc:
+            print(exc)
